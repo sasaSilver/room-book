@@ -4,15 +4,13 @@ from aiogram_dialog.widgets.kbd import (
     Button, Row, Calendar, CalendarConfig, Group, Back
 )
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram.types import CallbackQuery, ReplyParameters, Message, User
+from aiogram.types import CallbackQuery, User
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.utils.formatting import Text, Bold, Italic, ExpandableBlockQuote
-import datetime
+import datetime, dotenv
 
-from custom_cancel_wdget import CustomCancel
-from custom_timerange_widget import TimeRangeWidget
-from show_done_predicate import ShowDoneCondition
-import utils
+from bot.widgets.custom_cancel_wdget import CustomCancel
+from bot.widgets.custom_timerange_widget import TimeRangeWidget
+from bot.utils import ShowDoneCondition, generate_timeslots
 
 class Booking(TypedDict):
     user: str
@@ -48,11 +46,12 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
     success, error = True, "ErrorMsg"
     if not success:
         await callback.message.answer("<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет был отправлен администратору.")
-        await callback.bot.send_message(chat_id=981621742, text=f"`{error}`\n\nAt {datetime.datetime.now()}")
+        god_id = int(dotenv.get_key("../../.env", "GOD_ID"))
+        await callback.bot.send_message(chat_id=god_id, text=f"`{error}`\n\nAt {datetime.datetime.now()}")
         await dialog_manager.done(result=False)
         return
     data = dialog_manager.dialog_data
-    user: User = data['user']
+    user: User = data["user"]
     time_start: str = data["time_start"]
     time_start: str = datetime.time.fromisoformat(time_start).strftime("%H:%M")
     time_end: str = data["time_end"]
@@ -88,11 +87,11 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
+    # TODO implement api for data["daily_bookings"]
     _, data["daily_bookings"] = 0, {}
     return {
         "selected_date": data["selected_date"],
         "selected_room": data["selected_room"],
-         #TODO implement api for data["daily_bookings"]
         "daily_bookings": data["daily_bookings"]
     }
 
@@ -118,8 +117,7 @@ select_room_window = Window(
         Button(Const("Аудитория C"), id="btn_room_c", on_click=on_room_selected),
     ),
     CustomCancel(),
-    state=BookingDialogStates.SELECT_ROOM,
-    on_process_result=None
+    state=BookingDialogStates.SELECT_ROOM
 )
 
 select_date_window = Window(
@@ -134,12 +132,12 @@ select_date_window = Window(
         CustomCancel(),
     ),
     getter=getter_date_selection,
-    state=BookingDialogStates.SELECT_DATE,
+    state=BookingDialogStates.SELECT_DATE
 )
 
 time_selection_widget = TimeRangeWidget(
-    timepoints=utils.generate_timeslots(datetime.time(7, 0), datetime.time(18, 30), 30),
-    id="time_selection",
+    timepoints=generate_timeslots(datetime.time(7, 0), datetime.time(18, 30), 30),
+    id="time_selection"
 )
 
 select_time_window = Window(

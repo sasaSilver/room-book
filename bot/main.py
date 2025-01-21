@@ -1,5 +1,5 @@
 import asyncio, dotenv, logging, locale
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, executor
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.filters.command import Command
@@ -7,11 +7,11 @@ from aiogram.types import Message
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram_dialog import DialogManager, StartMode, setup_dialogs
 
-from booking_dialog import booking_dialog, BookingDialogStates
+from bot.dialogs.booking_dialog import booking_dialog, BookingDialogStates
 
 logging.basicConfig(level=logging.INFO)
 dotenv.load_dotenv()
-BOT_TOKEN = dotenv.get_key(".env", "BOT_TOKEN")
+BOT_TOKEN = dotenv.get_key("../.env", "BOT_TOKEN")
 properties = DefaultBotProperties(
     parse_mode=ParseMode.HTML,
     link_preview_is_disabled=True,
