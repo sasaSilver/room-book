@@ -24,7 +24,11 @@ setup_dialogs(dp)
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message, dialog_manager: DialogManager):
-    await dialog_manager.start(BookingDialogStates.SELECT_ROOM, mode=StartMode.RESET_STACK)
+    await dialog_manager.start(
+        BookingDialogStates.SELECT_ROOM,
+        mode=StartMode.RESET_STACK,
+        data={"user": message.from_user}
+    )
     await message.delete()
 
 if __name__ == "__main__":
