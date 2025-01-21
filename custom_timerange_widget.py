@@ -7,14 +7,12 @@ from aiogram_dialog import DialogManager, DialogProtocol
 from aiogram_dialog.widgets.common import WhenCondition
 from aiogram_dialog.widgets.kbd import Keyboard
 
-
 class Booking(TypedDict):
     id: int
     user_id: int
     user_alias: str
     time_start: str
     time_end: str
-
 
 class TimeRangeWidget(Keyboard):
     """
@@ -54,7 +52,7 @@ class TimeRangeWidget(Keyboard):
     ) -> list[datetime.time]:
         blocked_timepoints = []
 
-        for i, timepoint in enumerate(self.timepoints):
+        for timepoint in self.timepoints:
             for booking in daily_bookings:
                 booking_start_time = datetime.datetime.fromisoformat(booking["time_start"]).time()
                 booking_end_time = datetime.datetime.fromisoformat(booking["time_end"]).time()
