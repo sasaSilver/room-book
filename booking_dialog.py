@@ -33,35 +33,19 @@ async def on_date_selected(
     dialog_manager.dialog_data["selected_date"] = selected_date.isoformat()
     await dialog_manager.switch_to(BookingDialogStates.SELECT_BOOKING_TIME)
 
-async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
-    await callback.message.delete()
-     
-    chosen_timeslots = time_selection_widget.get_selected_time_points(dialog_manager)
-    
-    if len(chosen_timeslots) != 2:
-        await callback.message.answer("Выберите <b>оба<b/> временных интервала <b>начала и конца брони</b>.")
-        return
-    room = dialog_manager.dialog_data["selected_room"]
-    start, end = chosen_timeslots
+async def on_time_confirmed(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):         
     #TODO implement api
     #success, error = await api_client.book(callback.from_user.id, date, start, end)
-    success = True
-    error = "ErrorText"
+    success, error = True, "ErrorText"
     if success:
         await dialog_manager.switch_to(BookingDialogStates.BOOKING_SUCCESS)
     else:
+        dialog_manager.dialog_data["error_msg"] = error
         await dialog_manager.switch_to(BookingDialogStates.BOOKING_FAILURE)
-        await callback.message.answer(
-            f"<b>Возникла ошибка: {error}</b>\nНапишите @ob0china на Telegram и сообщите об ошибке."
-        )
-        widget = dialog_manager.find("time_selection")
-        widget.reset(dialog_manager)
 
-async def reset_time_selection(callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
-    widget = dialog_manager.find("time_selection")
-    if widget:
-        widget.reset(dialog_manager)
-    # Clear data
+async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
+    time_selection_widget = dialog_manager.find("time_selection")
+    time_selection_widget.reset(dialog_manager)
     dialog_manager.dialog_data.pop("time_start")
     dialog_manager.dialog_data.pop("time_end")
     
@@ -94,6 +78,11 @@ async def getter_for_booking_success(dialog_manager: DialogManager, **_kwargs) -
         "timeslot_text": f"{time_start} - {time_end}",
         "selected_room": data["selected_room"],
         "user": dialog_manager.event.from_user
+    }
+
+async def getter_for_booking_failure(dialog_manager: DialogManager, **_kwargs) -> dict:
+    return {
+        "error_msg": dialog_manager.dialog_data["error_msg"]
     }
 
 def generate_timeslots(start_time: datetime.time, end_time: datetime.time, interval: int) -> list[datetime.time]:
@@ -157,10 +146,26 @@ select_time_window = Window(
 
 booking_success_window = Window(
     Format(
-        "<b>{selected_room} на {selected_date}, {timeslot_text} была забронирована <a href='https://t.me/{user.username}'>{user.full_name}</a></b>."
+        "<b>✅ {selected_room} на {selected_date}, {timeslot_text} была забронирована <a href='https://t.me/{user.username}'>{user.full_name}</a></b>."
     ),
     getter=getter_for_booking_success,
-    state=BookingDialogStates.BOOKING_SUCCESS
+    state=BookingDialogStates.BOOKING_SUCCESS,
 )
 
-booking_dialog = Dialog(select_room_window, select_date_window, select_time_window, booking_success_window)
+booking_failure_window = Window(
+    Format("<b>{error_msg}</b>"),
+    getter=getter_for_booking_failure,
+    state=BookingDialogStates.BOOKING_FAILURE
+)
+
+async def on_close(result: dict | None, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.clear()
+    print(f"Booking dialog closed. Result: {result}")
+
+booking_dialog = Dialog(
+    select_room_window,
+    select_date_window,
+    select_time_window,
+    booking_success_window,
+    on_close=on_close,
+)
