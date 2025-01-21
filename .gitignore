@@ -2,3 +2,4 @@
 .venv
 ./pevenv.cfg
 .dist
+__pycache__
