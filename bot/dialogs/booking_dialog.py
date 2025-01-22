@@ -1,4 +1,3 @@
-from typing import TypedDict
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import (
     Button, Row, Calendar, CalendarConfig, Group, Back
@@ -6,11 +5,15 @@ from aiogram_dialog.widgets.kbd import (
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram.types import CallbackQuery, User
 from aiogram.fsm.state import State, StatesGroup
-import datetime, dotenv
 
-from bot.widgets.custom_cancel_wdget import CustomCancel
+from typing import TypedDict, Any
+import datetime
+
+from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.widgets.custom_timerange_widget import TimeRangeWidget
-from bot.utils import ShowDoneCondition, generate_timeslots
+from bot.utils import (
+    ShowDoneCondition, generate_timeslots, send_error_report, create_timeslot_str
+)
 
 class Booking(TypedDict):
     user: str
@@ -24,7 +27,6 @@ class BookingDialogStates(StatesGroup):
     SELECT_DATE = State()
     SELECT_BOOKING_TIME = State()
     
-
 async def on_room_selected(_callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data["selected_room"] = button.text.text
     await dialog_manager.switch_to(BookingDialogStates.SELECT_DATE)
@@ -40,29 +42,24 @@ async def on_date_selected(
     await dialog_manager.switch_to(BookingDialogStates.SELECT_BOOKING_TIME)
 
 async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):         
+    data = dialog_manager.dialog_data
+    user: User = data["user"]
     #TODO implement api
-    #success, error = await api_client.book(callback.from_user.id, date, start, end)
+    #success, error = await api_client.book(user.id, date, start, end)
     await callback.message.delete()
     success, error = True, "ErrorMsg"
     if not success:
-        await callback.message.answer("<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет был отправлен администратору.")
-        god_id = int(dotenv.get_key("../../.env", "GOD_ID"))
-        await callback.bot.send_message(chat_id=god_id, text=f"`{error}`\n\nAt {datetime.datetime.now()}")
-        await dialog_manager.done(result=False)
+        await callback.message.answer("<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет отправлен администратору.")
+        await send_error_report(callback.bot, data, error)
+        await dialog_manager.done(result=None)
         return
-    data = dialog_manager.dialog_data
-    user: User = data["user"]
-    time_start: str = data["time_start"]
-    time_start: str = datetime.time.fromisoformat(time_start).strftime("%H:%M")
-    time_end: str = data["time_end"]
-    time_end: str = datetime.time.fromisoformat(time_end).strftime("%H:%M")
-    timeslot_text = f"{time_start} - {time_end}"
+    timeslot_text = create_timeslot_str(data["time_start"], data["time_end"])
     booking = Booking(
-        user=data["user"],
+        user=user.username,
         room=data["selected_room"],
         date=data["selected_date"],
-        start_time=time_start,
-        end_time=time_end
+        start_time=data["time_start"],
+        end_time=data["time_end"]
     )
     await callback.message.answer(
         f"<b>✅ {data['selected_room']} на {data['selected_date']}, {timeslot_text} была забронирована "
@@ -88,25 +85,11 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
     # TODO implement api for data["daily_bookings"]
-    _, data["daily_bookings"] = 0, {}
+    daily_bookings = {}
     return {
         "selected_date": data["selected_date"],
         "selected_room": data["selected_room"],
-        "daily_bookings": data["daily_bookings"]
-    }
-
-async def getter_for_booking_success(dialog_manager: DialogManager, **_kwargs):
-    data = dialog_manager.dialog_data
-    time_start = data["time_start"]
-    time_start = datetime.time.fromisoformat(time_start).strftime("%H:%M")
-    time_end = data["time_end"]
-    time_end = datetime.time.fromisoformat(time_end).strftime("%H:%M")
-    
-    return {
-        "selected_date": data["selected_date"],
-        "timeslot_text": f"{time_start} - {time_end}",
-        "selected_room": data["selected_room"],
-        "user": data["user"]
+        "daily_bookings": daily_bookings
     }
 
 select_room_window = Window(
@@ -116,7 +99,7 @@ select_room_window = Window(
         Button(Const("Аудитория B"), id="btn_room_b", on_click=on_room_selected),
         Button(Const("Аудитория C"), id="btn_room_c", on_click=on_room_selected),
     ),
-    CustomCancel(),
+    CustomCancel(Const("❌")),
     state=BookingDialogStates.SELECT_ROOM
 )
 
@@ -129,10 +112,10 @@ select_date_window = Window(
     ),
     Row(
         Back(Const("🔙")),
-        CustomCancel(),
+        CustomCancel(Const("❌")),
     ),
     getter=getter_date_selection,
-    state=BookingDialogStates.SELECT_DATE
+    state=BookingDialogStates.SELECT_DATE,
 )
 
 time_selection_widget = TimeRangeWidget(
@@ -152,14 +135,13 @@ select_time_window = Window(
             when=ShowDoneCondition()
         ),
     ),
-    CustomCancel(),
+    CustomCancel(Const("❌")),
     state=BookingDialogStates.SELECT_BOOKING_TIME,
     getter=getter_time_selection
 )
 
 async def on_close(result: dict | None, dialog_manager: DialogManager):
-    dialog_manager.dialog_data.clear()
-    print(f"Booking dialog closed. Result: {result}")
+    print(f"Booking dialog closed. Result: {result}")   
 
 booking_dialog = Dialog(
     select_room_window,
