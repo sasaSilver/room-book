@@ -16,16 +16,20 @@ from bot.utils import (
 )
 
 class Booking(TypedDict):
-    user: str
+    username: str
+    user_id: int
     room: str
-    date: str
-    start_time: str
-    end_time: str
+    date: datetime.date
+    start_time: datetime.time
+    end_time: datetime.time
 
 class BookingDialogStates(StatesGroup):
     SELECT_ROOM = State()
     SELECT_DATE = State()
     SELECT_BOOKING_TIME = State()
+    
+async def on_dialog_start(_callback: CallbackQuery, dialog_manager: DialogManager):
+    dialog_manager.dialog_data["user"] = dialog_manager.start_data["user"]
     
 async def on_room_selected(_callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data["selected_room"] = button.text.text
@@ -33,7 +37,7 @@ async def on_room_selected(_callback: CallbackQuery, button: Button, dialog_mana
 
 async def on_date_selected(
         callback: CallbackQuery,
-        calendar: Calendar,
+        _calendar: Calendar,
         dialog_manager: DialogManager,
         selected_date: datetime.date
 ):
@@ -55,7 +59,8 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
         return
     timeslot_text = create_timeslot_str(data["time_start"], data["time_end"])
     booking = Booking(
-        user=user.username,
+        username=user.username,
+        user_id=user.id,
         room=data["selected_room"],
         date=data["selected_date"],
         start_time=data["time_start"],
@@ -73,8 +78,6 @@ async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog
     dialog_manager.dialog_data.pop("time_start")
     dialog_manager.dialog_data.pop("time_end")
 
-async def on_dialog_start(_callback: CallbackQuery, dialog_manager: DialogManager):
-    dialog_manager.dialog_data["user"] = dialog_manager.event.from_user
 
 async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
     room = dialog_manager.dialog_data["selected_room"]
@@ -140,7 +143,7 @@ select_time_window = Window(
     getter=getter_time_selection
 )
 
-async def on_close(result: dict | None, dialog_manager: DialogManager):
+async def on_dialog_close(result: dict | None, dialog_manager: DialogManager):
     print(f"Booking dialog closed. Result: {result}")   
 
 booking_dialog = Dialog(
@@ -148,5 +151,5 @@ booking_dialog = Dialog(
     select_date_window,
     select_time_window,
     on_start=on_dialog_start,
-    on_close=on_close,
+    on_close=on_dialog_close,
 )

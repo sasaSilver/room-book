@@ -7,4 +7,4 @@ class BotSettings:
     god_id: int = int(os.getenv("GOD_ID"))
     db_url: str = os.getenv("DB_URL")
 
-settings = BotSettings()
+settings: BotSettings = BotSettings()

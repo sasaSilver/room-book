@@ -1,5 +1,5 @@
 import asyncio, logging, locale
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, F
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.filters.command import Command
@@ -23,7 +23,7 @@ dp = Dispatcher(storage=MemoryStorage())
 dp.include_router(booking_dialog)
 setup_dialogs(dp)
 
-@dp.message(Command("start"))
+@dp.message(F.text.in_(["/start", "Создать бронь"]))
 async def cmd_start(message: Message, dialog_manager: DialogManager):
     await message.delete()
     await dialog_manager.start(
