@@ -1,26 +1,20 @@
-from sqlalchemy import create_engine
-from schemas import Base, BookingSchema
-from bot.database.database import engine
+import asyncio
+from bot.database.core import engine
+from bot.database.schemas import Base
 import argparse
 
-def do_with_tables(action: str):
-    try:
+async def do_with_tables(action: str):
+    async with engine.begin() as conn:
         if action == "recreate":
-            # Drop all existing tables
-            Base.metadata.drop_all(bind=engine)
-            # Create all tables defined in the schemas
-            Base.metadata.create_all(bind=engine)
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
             print("Tables recreated successfully!")
         elif action == "create":
-            # Create all tables defined in the schemas
-            Base.metadata.create_all(bind=engine)
+            await conn.run_sync(Base.metadata.create_all)
             print("Tables created successfully!")
         elif action == "drop":
-            # Drop all existing tables
-            Base.metadata.drop_all(bind=engine)
+            await conn.run_sync(Base.metadata.drop_all)
             print("Tables dropped successfully!")
-    except Exception as e:
-        print(f"Error managing tables: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Manage database tables')
@@ -31,11 +25,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if args.create:
-        do_with_tables("create")
+        asyncio.run(do_with_tables("create"))
+    elif args.recreate:
+        asyncio.run(do_with_tables("recreate"))
     elif args.drop:
-        do_with_tables("drop")
+        asyncio.run(do_with_tables("drop"))
     else:
-        # Default behavior: recreate tables
-        do_with_tables("recreate")
+        parser.print_help()
     
     

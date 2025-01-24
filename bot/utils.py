@@ -21,9 +21,9 @@ def generate_timeslots(start_time: datetime.time, end_time: datetime.time, inter
         ).time()
     return timeslots  
 
-def create_timeslot_str(start_iso: str, end_iso: str):
-    start_hm: str = datetime.time.fromisoformat(start_iso).strftime("%H:%M")
-    end_hm: str = datetime.time.fromisoformat(end_iso).strftime("%H:%M")
+def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
+    start_hm: str = start_time.strftime("%H:%M")
+    end_hm: str = end_time.strftime("%H:%M")
     return f"{start_hm} - {end_hm}"
 
 async def send_error_report(bot: Bot, data: dict, error: str):

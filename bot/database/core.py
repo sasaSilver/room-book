@@ -3,7 +3,6 @@ from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
 from bot.settings import settings
 
-# use asyncpg instead of psycopg2
 DATABASE_URL = settings.db_url.replace('postgresql://', 'postgresql+asyncpg://')
 
 engine = create_async_engine(
@@ -24,4 +23,4 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             try:
                 yield session
             finally:
-                await session.close()
+                await session.close() 

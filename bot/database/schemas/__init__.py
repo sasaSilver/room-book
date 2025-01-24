@@ -1,1 +1,1 @@
-from booking_schema import *
+from .booking_schema import *

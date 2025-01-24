@@ -14,6 +14,8 @@ from bot.widgets.custom_timerange_widget import TimeRangeWidget
 from bot.utils import (
     ShowDoneCondition, generate_timeslots, send_error_report, create_timeslot_str
 )
+from bot.database import booking_client
+from bot.database.schemas import BookingSchema
 
 class Booking(TypedDict):
     username: str
@@ -46,28 +48,22 @@ async def on_date_selected(
     await dialog_manager.switch_to(BookingDialogStates.SELECT_BOOKING_TIME)
 
 async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):         
+    await callback.message.delete()
     data = dialog_manager.dialog_data
     user: User = data["user"]
-    #TODO implement api
-    #success, error = await api_client.book(user.id, date, start, end)
-    await callback.message.delete()
-    success, error = False, Exception("ErrorMsg")
+    booking = BookingSchema(
+        username=user.username,
+        user_full_name=user.full_name,
+        room=data["selected_room"],
+        date=datetime.date.fromisoformat(data["selected_date"]),
+        start_time=datetime.time.fromisoformat(data["time_start"]),
+        end_time=datetime.time.fromisoformat(data["time_end"])
+    )
+    success, error = await booking_client.create_booking(booking)
     if not success:
         await dialog_manager.done(result=error)
         return
-    timeslot_text = create_timeslot_str(data["time_start"], data["time_end"])
-    await callback.message.answer(
-        f"<b>✅ {data['selected_room']} на {data['selected_date']}, {timeslot_text} была забронирована "
-        f"<a href='https://t.me/{user.username}'>{user.full_name}</a></b>."
-    )
-    await dialog_manager.done(result=Booking(
-        username=user.username,
-        user_id=user.id,
-        room=data["selected_room"],
-        date=data["selected_date"],
-        start_time=data["time_start"],
-        end_time=data["time_end"]
-    ))
+    await dialog_manager.done(result=booking)
 
 async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
     time_selection_widget = dialog_manager.find("time_selection")
@@ -140,15 +136,18 @@ select_time_window = Window(
     getter=getter_time_selection
 )
 
-async def on_dialog_close(result: dict | None, dm: DialogManager):
-    print(dm)
+async def on_dialog_close(result: BookingSchema | Exception, dm: DialogManager):
     if isinstance(result, Exception):
         await dm.event.message.answer(
             "<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет отправлен администратору.",
         )
         await send_error_report(dm.event.bot, dm.dialog_data, str(result))
-    elif isinstance(result, Booking):
-        print(f"Booking dialog closed. Result: {result}")
+    elif isinstance(result, BookingSchema):
+        timeslot_text = create_timeslot_str(result.start_time, result.end_time)
+        await dm.event.message.answer(
+            f"<b>✅ {result.room} на {result.date}, {timeslot_text} была забронирована "
+            f"<a href='https://t.me/{result.username}'>{result.user_full_name}</a></b>."
+        )
 
 booking_dialog = Dialog(
     select_room_window,
