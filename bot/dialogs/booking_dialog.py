@@ -51,26 +51,23 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
     #TODO implement api
     #success, error = await api_client.book(user.id, date, start, end)
     await callback.message.delete()
-    success, error = True, "ErrorMsg"
+    success, error = False, Exception("ErrorMsg")
     if not success:
-        await callback.message.answer("<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет отправлен администратору.")
-        await send_error_report(callback.bot, data, error)
-        await dialog_manager.done(result=None)
+        await dialog_manager.done(result=error)
         return
     timeslot_text = create_timeslot_str(data["time_start"], data["time_end"])
-    booking = Booking(
+    await callback.message.answer(
+        f"<b>✅ {data['selected_room']} на {data['selected_date']}, {timeslot_text} была забронирована "
+        f"<a href='https://t.me/{user.username}'>{user.full_name}</a></b>."
+    )
+    await dialog_manager.done(result=Booking(
         username=user.username,
         user_id=user.id,
         room=data["selected_room"],
         date=data["selected_date"],
         start_time=data["time_start"],
         end_time=data["time_end"]
-    )
-    await callback.message.answer(
-        f"<b>✅ {data['selected_room']} на {data['selected_date']}, {timeslot_text} была забронирована "
-        f"<a href='https://t.me/{user.username}'>{user.full_name}</a></b>."
-    )
-    await dialog_manager.done(result=booking)
+    ))
 
 async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
     time_selection_widget = dialog_manager.find("time_selection")
@@ -143,8 +140,15 @@ select_time_window = Window(
     getter=getter_time_selection
 )
 
-async def on_dialog_close(result: dict | None, dialog_manager: DialogManager):
-    print(f"Booking dialog closed. Result: {result}")   
+async def on_dialog_close(result: dict | None, dm: DialogManager):
+    print(dm)
+    if isinstance(result, Exception):
+        await dm.event.message.answer(
+            "<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет отправлен администратору.",
+        )
+        await send_error_report(dm.event.bot, dm.dialog_data, str(result))
+    elif isinstance(result, Booking):
+        print(f"Booking dialog closed. Result: {result}")
 
 booking_dialog = Dialog(
     select_room_window,
