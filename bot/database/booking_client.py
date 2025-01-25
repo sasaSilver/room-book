@@ -18,18 +18,18 @@ class BookingClient:
                 await session.rollback()
                 return False, e
     
-    async def get_bookings_by_date(self, date: datetime.date) -> Tuple[bool, Optional[List[BookingSchema]], Optional[Exception]]:
-        async with get_db() as session:
+    async def get_bookings_by_date(self, date: datetime.date, room: str) -> Tuple[bool, Optional[List[BookingSchema]], Optional[Exception]]:
+        async for session in get_db():
             try:
                 result = await session.execute(
-                    select(BookingSchema).where(BookingSchema.date == date)
+                    select(BookingSchema).where(BookingSchema.date == date, BookingSchema.room == room)
                 )
-                return result.scalars().all(), None
+                return True, result.scalars().all(), None
             except Exception as e:
                 return False, None, e
             
     async def get_bookings_by_username(self, username: str) -> Tuple[bool, Optional[List[BookingSchema]], Optional[Exception]]:
-        async with get_db() as session:
+        async for session in get_db():
             try:
                 result = await session.execute(
                     select(BookingSchema).where(BookingSchema.username == username)
@@ -39,7 +39,7 @@ class BookingClient:
                 return False, None, e
     
     async def delete_booking(self, booking_id: int) -> Tuple[bool, Optional[Exception]]:
-        async with get_db() as session:
+        async for session in get_db():
             try:
                 result = await session.execute(
                     delete(BookingSchema).where(BookingSchema.id == booking_id)

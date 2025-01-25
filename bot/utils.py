@@ -9,8 +9,8 @@ from bot.settings import settings
 class ShowDoneCondition(Predicate):
     def __call__(self, data: dict, _widget: Whenable, dialog_manager: DialogManager) -> bool:
         data = dialog_manager.dialog_data
-        return data.get("time_start", False) and data.get("time_end", False)
-
+        return data.get("start_time", False) and data.get("end_time", False)
+    
 def generate_timeslots(start_time: datetime.time, end_time: datetime.time, interval: int) -> list[datetime.time]:
     timeslots = []
     current_time = start_time
@@ -35,7 +35,7 @@ async def send_error_report(bot: Bot, data: dict, error: str):
         f"User: {data['user'].username} {data['user'].full_name}, ID: {data['user'].id})\n"
         f"Room: {data['selected_room']}\n"
         f"Date: {data['selected_date']}\n"
-        f"Time slot: {data['time_start']} - {data['time_end']}\n"
+        f"Time slot: {data['start_time']} - {data['end_time']}\n"
         f"Error:\n{error}"
     )
     timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")

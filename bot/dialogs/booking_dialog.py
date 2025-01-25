@@ -56,8 +56,8 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
         user_full_name=user.full_name,
         room=data["selected_room"],
         date=datetime.date.fromisoformat(data["selected_date"]),
-        start_time=datetime.time.fromisoformat(data["time_start"]),
-        end_time=datetime.time.fromisoformat(data["time_end"])
+        start_time=datetime.time.fromisoformat(data["start_time"]),
+        end_time=datetime.time.fromisoformat(data["end_time"])
     )
     success, error = await booking_client.create_booking(booking)
     if not success:
@@ -68,8 +68,8 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
 async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
     time_selection_widget = dialog_manager.find("time_selection")
     time_selection_widget.reset(dialog_manager)
-    dialog_manager.dialog_data.pop("time_start")
-    dialog_manager.dialog_data.pop("time_end")
+    dialog_manager.dialog_data.pop("start_time", None)
+    dialog_manager.dialog_data.pop("end_time", None)
 
 
 async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
@@ -81,7 +81,13 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
     # TODO implement api for data["daily_bookings"]
-    daily_bookings = {}
+    success, daily_bookings, error = await booking_client.get_bookings_by_date(
+        datetime.date.fromisoformat(data["selected_date"]),
+        data["selected_room"]
+    )
+    if not success:
+        await dialog_manager.done(result=error)
+        return
     return {
         "selected_date": data["selected_date"],
         "selected_room": data["selected_room"],

@@ -9,10 +9,12 @@ from aiogram_dialog.widgets.kbd import Keyboard
 
 class Booking(TypedDict):
     id: int
-    user_id: int
-    user_alias: str
-    time_start: str
-    time_end: str
+    username: str
+    user_full_name: str
+    room: str
+    date: datetime.date
+    start_time: datetime.time
+    end_time: datetime.time
 
 class TimeRangeWidget(Keyboard):
     """
@@ -36,13 +38,13 @@ class TimeRangeWidget(Keyboard):
         already_booked_timepoints: dict[datetime.time, Booking] = {}
         for timeslot in self.timepoints:
             for booking in daily_bookings:
-                time_start = datetime.datetime.fromisoformat(booking["time_start"])
-                time_end = datetime.datetime.fromisoformat(booking["time_end"])
+                start_time = booking.start_time
+                end_time = booking.end_time
 
-                if not reverse and time_start.time() <= timeslot < time_end.time():
+                if not reverse and start_time <= timeslot < end_time:
                     already_booked_timepoints[timeslot] = booking
                     break
-                if reverse and time_start.time() < timeslot <= time_end.time():
+                if reverse and start_time < timeslot <= end_time:
                     already_booked_timepoints[timeslot] = booking
                     break
         return already_booked_timepoints
@@ -54,8 +56,8 @@ class TimeRangeWidget(Keyboard):
 
         for timepoint in self.timepoints:
             for booking in daily_bookings:
-                booking_start_time = datetime.datetime.fromisoformat(booking["time_start"]).time()
-                booking_end_time = datetime.datetime.fromisoformat(booking["time_end"]).time()
+                booking_start_time = booking.start_time
+                booking_end_time = booking.end_time
                 if selected_time is None:
                     if booking_start_time <= timepoint < booking_end_time:
                         blocked_timepoints.append(timepoint)
@@ -69,47 +71,110 @@ class TimeRangeWidget(Keyboard):
 
         return blocked_timepoints
 
-    async def _render_keyboard(self, data: dict, manager: DialogManager) -> list[list[InlineKeyboardButton]]:
-        endpoint_time_selected = self.get_selected_time_points(manager)
-        daily_bookings: list[Booking] = data["daily_bookings"]
-
+    def _get_keyboard_state(self, endpoint_time_selected: list[datetime.time], daily_bookings: list[Booking]) -> tuple[dict[datetime.time, Booking], list[datetime.time], list[datetime.time]]:
+        """
+        Get the current state of the keyboard based on selected timepoints
+        Returns: (already_booked_timepoints, available_timepoints_to_select, blocked_timepoints)
+        """
         if len(endpoint_time_selected) == 0:
-            already_booked_timepoints = self.get_already_booked_timepoints(daily_bookings)
-            available_timepoints_to_select = self.get_all_time_points()
-            blocked_timepoints = self.get_blocked_timepoints(None, daily_bookings)
+            return (
+                self.get_already_booked_timepoints(daily_bookings),
+                self.get_all_time_points(),
+                self.get_blocked_timepoints(None, daily_bookings)
+            )
         elif len(endpoint_time_selected) == 1:
             start_time = endpoint_time_selected[0]
-            already_booked_timepoints = self.get_already_booked_timepoints(daily_bookings, reverse=True)
-            available_timepoints_to_select = self.get_end_time_points(start_time)
-            blocked_timepoints = self.get_blocked_timepoints(start_time, daily_bookings)
+            return (
+                self.get_already_booked_timepoints(daily_bookings, reverse=True),
+                self.get_end_time_points(start_time),
+                self.get_blocked_timepoints(start_time, daily_bookings)
+            )
         elif len(endpoint_time_selected) == 2:
-            already_booked_timepoints = self.get_already_booked_timepoints(daily_bookings, reverse=True)
-            available_timepoints_to_select = []
-            blocked_timepoints = []
-            manager.dialog_data["time_start"] = endpoint_time_selected[0].isoformat()
-            manager.dialog_data["time_end"] = endpoint_time_selected[1].isoformat()
+            return (
+                self.get_already_booked_timepoints(daily_bookings, reverse=True),
+                [],
+                []
+            )
         else:
             assert_never(endpoint_time_selected)
 
-        keyboard_builder = InlineKeyboardBuilder()
-        for timepoint in self.timepoints:
-            time_text = timepoint.strftime("%H:%M")
-            time_callback_data = self._item_callback_data(time_text)
+    def _get_button_text(self, timepoint: datetime.time, endpoint_time_selected: list[datetime.time]) -> str:
+        """Generate button text based on timepoint and selection state"""
+        time_text = timepoint.strftime("%H:%M")
+        if timepoint == endpoint_time_selected[0]:
+            return f"{time_text} -"
+        elif timepoint == endpoint_time_selected[-1]:
+            return f"- {time_text}"
+        return time_text
 
+    def _get_filtered_timeslots(self, selected_date: datetime.date) -> list[datetime.time]:
+        """Get timeslots filtered by current time if date is today"""
+        if selected_date == datetime.datetime.now().date():
+            return list(filter(lambda x: datetime.datetime.now().time() <= x, self.timepoints))
+        return self.timepoints
+
+    async def _render_keyboard(self, data: dict, manager: DialogManager) -> list[list[InlineKeyboardButton]]:
+        """Render the time selection keyboard"""
+        # Get selected timepoints and bookings
+        endpoint_time_selected = self.get_selected_time_points(manager)
+        daily_bookings: list[Booking] = data["daily_bookings"]
+
+        # Get current keyboard state
+        already_booked_timepoints, available_timepoints_to_select, blocked_timepoints = self._get_keyboard_state(
+            endpoint_time_selected, daily_bookings
+        )
+
+        # Store selected times in dialog data if both endpoints are selected
+        if len(endpoint_time_selected) == 2:
+            manager.dialog_data["start_time"] = endpoint_time_selected[0].isoformat()
+            manager.dialog_data["end_time"] = endpoint_time_selected[1].isoformat()
+
+        # Initialize keyboard builder
+        keyboard_builder = InlineKeyboardBuilder()
+        
+        # Get filtered timeslots based on selected date
+        selected_date = datetime.datetime.strptime(manager.dialog_data["selected_date"], "%Y-%m-%d").date()
+        timeslots = self._get_filtered_timeslots(selected_date)
+        
+        # Build keyboard buttons
+        for timepoint in timeslots:
+            time_callback_data = self._item_callback_data(timepoint.strftime("%H:%M"))
+
+            # Determine button state
             available = timepoint in available_timepoints_to_select
             blocked = timepoint in blocked_timepoints
             already_selected = timepoint in endpoint_time_selected
+            booked_by_someone = timepoint in already_booked_timepoints
 
+            # Render appropriate button based on state
             if already_selected:
-                text = f"{time_text} -" if timepoint == endpoint_time_selected[0] else f"- {time_text}"
+                text = self._get_button_text(timepoint, endpoint_time_selected)
                 keyboard_builder.button(text=text, callback_data=time_callback_data)
             elif available and not blocked:
-                keyboard_builder.button(text=time_text, callback_data=time_callback_data)
+                keyboard_builder.button(
+                    text=timepoint.strftime("%H:%M"), 
+                    callback_data=time_callback_data
+                )
+            elif booked_by_someone:
+                booking = already_booked_timepoints[timepoint]
+                if booking.username == manager.event.from_user.username:
+                    keyboard_builder.button(
+                        text="🟢", 
+                        callback_data=self._item_callback_data("None")
+                    )
+                else:
+                    keyboard_builder.button(
+                        text="🔴", 
+                        url=f"https://t.me/{booking.username}"
+                    )
             else:
-                keyboard_builder.button(text=" ", callback_data=self._item_callback_data("None"))
-        
-        return keyboard_builder.export()
+                keyboard_builder.button(
+                    text=" ",
+                    callback_data=self._item_callback_data("None"),
+                )
 
+        return keyboard_builder.export()
+    
     def get_selected_time_points(self, manager: DialogManager) -> list[datetime.time]:
         endpoint_time_selected = self.get_widget_data(manager, [])
         return list(map(lambda x: datetime.datetime.strptime(x, "%H:%M").time(), endpoint_time_selected))
