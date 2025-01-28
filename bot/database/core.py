@@ -10,12 +10,19 @@ engine = create_async_engine(
     echo=True
 )
 
+"""
+Not sure wtf this is
+"""
 async_session = sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False
 )
 
+"""
+For automatic beginning, committing and rolling back of db operations
+(whatever that means)
+"""
 class AsyncSessionManager:
     async def __aenter__(self) -> AsyncSession:
         self.session = async_session()

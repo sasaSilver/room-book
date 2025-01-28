@@ -6,6 +6,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, DialogProtocol
 from aiogram_dialog.widgets.common import WhenCondition
 from aiogram_dialog.widgets.kbd import Keyboard
+from bot.constants import EMOJI_GREEN_CIRCLE, EMOJI_RED_CIRCLE
 
 class Booking(TypedDict):
     id: int
@@ -24,13 +25,12 @@ class TimeRangeWidget(Keyboard):
     def reset(self, manager: DialogManager):
         self.set_widget_data(manager, [])
 
-    def get_all_time_points(self) -> list[datetime.time]:
-        return self.timepoints
-
+    def get_start_time_points(self) -> list[datetime.time]:
+        return self.timepoints[:-1]
+    
     def get_end_time_points(self, start_time: datetime.time) -> list[datetime.time]:
-        timepoints = self.get_all_time_points()
-        start_index = timepoints.index(start_time)
-        return timepoints[start_index:]
+        start_index = self.timepoints.index(start_time)
+        return self.timepoints[start_index:]
 
     def get_already_booked_timepoints(
         self, daily_bookings: list[Booking], reverse: bool = False
@@ -79,7 +79,7 @@ class TimeRangeWidget(Keyboard):
         if len(endpoint_time_selected) == 0:
             return (
                 self.get_already_booked_timepoints(daily_bookings),
-                self.get_all_time_points(),
+                self.get_start_time_points(),
                 self.get_blocked_timepoints(None, daily_bookings)
             )
         elif len(endpoint_time_selected) == 1:
@@ -159,12 +159,12 @@ class TimeRangeWidget(Keyboard):
                 booking = already_booked_timepoints[timepoint]
                 if booking.username == manager.event.from_user.username:
                     keyboard_builder.button(
-                        text="🟢", 
+                        text=EMOJI_GREEN_CIRCLE, 
                         callback_data=self._item_callback_data("None")
                     )
                 else:
                     keyboard_builder.button(
-                        text="🔴", 
+                        text=EMOJI_RED_CIRCLE, 
                         url=f"https://t.me/{booking.username}"
                     )
             else:
@@ -186,14 +186,7 @@ class TimeRangeWidget(Keyboard):
         dialog: DialogProtocol,
         manager: DialogManager,
     ) -> bool:
-        """
-        Process callback from item
-        :param callback: callback
-        :param data: callback data
-        :param dialog: dialog
-        :param manager: dialog manager
-        :return: True if processed
-        """
+        
         widget_data = self.get_widget_data(manager, [])
 
         if data == "None":

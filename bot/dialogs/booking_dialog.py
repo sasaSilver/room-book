@@ -15,6 +15,11 @@ from bot.utils import (
 )
 import bot.database.booking_crud as booking_crud
 from bot.database.schemas import BookingSchema
+from bot.constants import (
+    HEADER_SELECT_ROOM, HEADER_SELECT_DATE, HEADER_SELECT_TIME,
+    BTN_CANCEL, BTN_BACK, BTN_FINISH,
+    ERROR_CREATE_BOOKING, ROOMS, SUCCESS_BOOKING,
+)
 
 class BookingDialogStates(StatesGroup):
     SELECT_ROOM = State()
@@ -63,7 +68,6 @@ async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog
     dialog_manager.dialog_data.pop("start_time", None)
     dialog_manager.dialog_data.pop("end_time", None)
 
-
 async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
     room = dialog_manager.dialog_data["selected_room"]
     return {
@@ -72,7 +76,6 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
-    # TODO implement api for data["daily_bookings"]
     result = await booking_crud.get_bookings_by_date_room(
         datetime.date.fromisoformat(data["selected_date"]),
         data["selected_room"]
@@ -87,26 +90,25 @@ async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     }
 
 select_room_window = Window(
-    Const("Выберите аудиторию:"),
+    Const(HEADER_SELECT_ROOM),
     Row(
-        Button(Const("Аудитория A"), id="btn_room_a", on_click=on_room_selected),
-        Button(Const("Аудитория B"), id="btn_room_b", on_click=on_room_selected),
-        Button(Const("Аудитория C"), id="btn_room_c", on_click=on_room_selected),
+        Button(Const(room), id=f"{room}", on_click=on_room_selected)
+            for room in ROOMS
     ),
-    CustomCancel(Const("❌")),
+    CustomCancel(Const(BTN_CANCEL)),
     state=BookingDialogStates.SELECT_ROOM
 )
 
 select_date_window = Window(
-    Format("Выберите дату брони для <b>{selected_room}</b>:"),
+    Format(HEADER_SELECT_DATE),
     Calendar(
         id="calendar",
         on_click=on_date_selected,
         config=CalendarConfig(min_date=datetime.date.today()),
     ),
     Row(
-        Back(Const("🔙")),
-        CustomCancel(Const("❌")),
+        Back(Const(BTN_BACK)),
+        CustomCancel(Const(BTN_CANCEL)),
     ),
     getter=getter_date_selection,
     state=BookingDialogStates.SELECT_DATE,
@@ -118,35 +120,37 @@ time_selection_widget = TimeRangeWidget(
 )
 
 select_time_window = Window(
-    Format("Выберите время начала и конца брони <b>{selected_room}</b> на <b>{selected_date}</b>:"),
+    Format(HEADER_SELECT_TIME),
     Group(time_selection_widget, width=4),
     Row(
-        Back(Const("🔙"), on_click=reset_time_selection),
+        Back(Const(BTN_BACK), on_click=reset_time_selection),
         Button(
-            Const("✅ Завершить"),
+            Const(BTN_FINISH),
             id="btn_time_selected",
             on_click=on_time_confirmed,
             when=ShowDoneCondition()
         ),
     ),
-    CustomCancel(Const("❌")),
+    CustomCancel(Const(BTN_CANCEL)),
     state=BookingDialogStates.SELECT_BOOKING_TIME,
     getter=getter_time_selection
 )
 
 async def on_dialog_close(result: BookingSchema | Exception, dm: DialogManager):
     if isinstance(result, Exception):
-        await dm.event.message.answer(
-            "<b><i>❌ При бронировании произошла ошибка со стороны бота!</i></b>\n"
-            "Отчет отправлен администратору."
-        )
+        await dm.event.message.answer(ERROR_CREATE_BOOKING)
         dm.dialog_data["error_type"] = "Booking"
         await send_error_report(dm.event.bot, dm.dialog_data, str(result))
     elif isinstance(result, BookingSchema):
         timeslot_text = create_timeslot_str(result.start_time, result.end_time)
         await dm.event.message.answer(
-            f"<b>✅ {result.room} на {result.date}, {timeslot_text} была забронирована "
-            f"<a href='https://t.me/{result.username}'>{result.user_full_name}</a></b>."
+            SUCCESS_BOOKING.format(
+                room=result.room,
+                date=result.date,
+                timeslot=timeslot_text,
+                username=result.username,
+                user_full_name=result.user_full_name
+            )
         )
 
 booking_dialog = Dialog(

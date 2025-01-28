@@ -1,15 +1,20 @@
-from typing import List, Dict
+from typing import Dict
+from aiogram import F
 from aiogram_dialog import Dialog, DialogManager, Window, SubManager
-from aiogram_dialog.widgets.kbd import ListGroup, Row, Button
+from aiogram_dialog.widgets.kbd import ListGroup, Row, Button, Back
 from aiogram_dialog.widgets.text import Const, Format
 
-from aiogram import F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
 
 import bot.database.booking_crud as booking_crud
 from bot.utils import send_error_report
 from bot.database.schemas.booking_schema import BookingSchema
+from bot.widgets.custom_cancel_widget import CustomCancel
+from bot.constants import (
+    HEADER_USER_BOOKINGS, HEADER_NO_BOOKINGS, BTN_CANCEL_BOOKING,
+    BTN_BACK, ERROR_BOT, ERROR_DELETE_BOOKING, DATE_FORMAT, TIME_FORMAT
+)
 
 class ViewBookingsDialogStates(StatesGroup):
     VIEW_BOOKINGS = State()
@@ -24,8 +29,8 @@ async def format_booking(booking: BookingSchema) -> Dict[str, str]:
         "room": booking.room,
         "booking_details": (
             f"{room_text}, "
-            f"{booking.date.strftime('%d.%m')}: "
-            f"{booking.start_time.strftime('%H:%M')}-{booking.end_time.strftime('%H:%M')}"
+            f"{booking.date.strftime(DATE_FORMAT)}: "
+            f"{booking.start_time.strftime(TIME_FORMAT)}-{booking.end_time.strftime(TIME_FORMAT)}"
         )
     }
 
@@ -33,10 +38,7 @@ async def getter_user_bookings_window(**kwargs):
     dm: DialogManager = kwargs['dialog_manager']
     result = await booking_crud.get_bookings_by_username(dm.dialog_data["user"].username)
     if isinstance(result, Exception):
-        await dm.event.answer(
-            "<b><i>❌ Произошла ошибка со стороны бота!</i></b>\n"
-            "Отчет отправлен администратору."
-        )
+        await dm.event.answer(ERROR_BOT)
         await send_error_report(dm.event.bot, dm.dialog_data, str(result))
         await dm.done()
     
@@ -47,22 +49,22 @@ async def getter_user_bookings_window(**kwargs):
         "bookings": formatted_bookings
     }
 
-async def on_delete_booking(callback: CallbackQuery, button: Button, manager: SubManager):
+async def delete_booking(callback: CallbackQuery, button: Button, manager: SubManager):
     booking_id = int(manager.item_id)
     result = await booking_crud.delete_booking(booking_id)
     if isinstance(result, Exception):
-        await manager.event.message.answer(
-            "<b><i>❌ При удалении бронирования произошла ошибка со стороны бота!</i></b>\n"
-            "Отчет отправлен администратору."
-        )
+        await manager.event.message.answer(ERROR_DELETE_BOOKING)
         await send_error_report(manager.event.bot, manager.dialog_data, str(result))
         await manager.done()
-    
-    
 
 user_bookings_window = Window(
     Format(
-        "Бронирования пользователя <a href='https://t.me/{user.username}'>{user.full_name}</a>",
+        HEADER_USER_BOOKINGS,
+        when=F['dialog_data']['bookings'].len() > 0
+    ),
+    Format(
+        HEADER_NO_BOOKINGS,
+        when=F['dialog_data']['bookings'].len() == 0
     ),
     ListGroup(
         Row(
@@ -71,15 +73,16 @@ user_bookings_window = Window(
                 id="booking_details"
             ),
             Button(
-                Const("❌"),
+                Const(BTN_CANCEL_BOOKING),
                 id="delete_booking",
-                on_click=on_delete_booking
+                on_click=delete_booking
             ),
         ),
         id="user_bookings",
         items="bookings",
         item_id_getter=lambda item: item["id"]
     ),
+    CustomCancel(Const(BTN_BACK)),
     state=ViewBookingsDialogStates.VIEW_BOOKINGS,
     getter=getter_user_bookings_window
 )
