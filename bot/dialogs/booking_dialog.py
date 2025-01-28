@@ -6,7 +6,6 @@ from aiogram_dialog.widgets.text import Const, Format
 from aiogram.types import CallbackQuery, User
 from aiogram.fsm.state import State, StatesGroup
 
-from typing import TypedDict, Any
 import datetime
 
 from bot.widgets.custom_cancel_widget import CustomCancel
@@ -14,16 +13,8 @@ from bot.widgets.custom_timerange_widget import TimeRangeWidget
 from bot.utils import (
     ShowDoneCondition, generate_timeslots, send_error_report, create_timeslot_str
 )
-from bot.database import booking_client
+import bot.database.booking_crud as booking_crud
 from bot.database.schemas import BookingSchema
-
-class Booking(TypedDict):
-    username: str
-    user_id: int
-    room: str
-    date: datetime.date
-    start_time: datetime.time
-    end_time: datetime.time
 
 class BookingDialogStates(StatesGroup):
     SELECT_ROOM = State()
@@ -59,9 +50,10 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
         start_time=datetime.time.fromisoformat(data["start_time"]),
         end_time=datetime.time.fromisoformat(data["end_time"])
     )
-    success, error = await booking_client.create_booking(booking)
-    if not success:
-        await dialog_manager.done(result=error)
+    try:
+        await booking_crud.create_booking(booking)
+    except Exception as e:
+        await dialog_manager.done(result=e)
         return
     await dialog_manager.done(result=booking)
 
@@ -81,17 +73,17 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
     # TODO implement api for data["daily_bookings"]
-    success, daily_bookings, error = await booking_client.get_bookings_by_date(
+    result = await booking_crud.get_bookings_by_date_room(
         datetime.date.fromisoformat(data["selected_date"]),
         data["selected_room"]
     )
-    if not success:
-        await dialog_manager.done(result=error)
+    if isinstance(result, Exception):
+        await dialog_manager.done(result=result)
         return
     return {
         "selected_date": data["selected_date"],
         "selected_room": data["selected_room"],
-        "daily_bookings": daily_bookings
+        "daily_bookings": result
     }
 
 select_room_window = Window(
@@ -145,8 +137,10 @@ select_time_window = Window(
 async def on_dialog_close(result: BookingSchema | Exception, dm: DialogManager):
     if isinstance(result, Exception):
         await dm.event.message.answer(
-            "<b><i>❌ Ошибка со стороны бота!</i></b>\nОтчет отправлен администратору.",
+            "<b><i>❌ При бронировании произошла ошибка со стороны бота!</i></b>\n"
+            "Отчет отправлен администратору."
         )
+        dm.dialog_data["error_type"] = "Booking"
         await send_error_report(dm.event.bot, dm.dialog_data, str(result))
     elif isinstance(result, BookingSchema):
         timeslot_text = create_timeslot_str(result.start_time, result.end_time)

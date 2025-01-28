@@ -29,14 +29,15 @@ def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
 async def send_error_report(bot: Bot, data: dict, error: str):
     god_id = settings.god_id
     bug_report = (
-        f"Boking Error\n"
+        f"{data['error_type']} Error\n"
         f"============\n"
         f"Time: {datetime.datetime.now()}\n"
         f"User: {data['user'].username} {data['user'].full_name}, ID: {data['user'].id})\n"
-        f"Room: {data['selected_room']}\n"
-        f"Date: {data['selected_date']}\n"
-        f"Time slot: {data['start_time']} - {data['end_time']}\n"
-        f"Error:\n{error}"
+        f"Room: {data['selected_room']}\n" if data.get("selected_room", False) else ""
+        f"Date: {data['selected_date']}\n" if data.get("selected_date", False) else ""
+        f"Time slot: {data['start_time']} - {data['end_time']}\n" if data.get("start_time", False) and data.get("end_time", False) else ""
+        f"Error:\n"
+        f"{error}"
     )
     timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")
     bug_report_bytes = bug_report.encode('utf-8')
@@ -47,5 +48,4 @@ async def send_error_report(bot: Bot, data: dict, error: str):
     await bot.send_document(
         chat_id=god_id,
         document=bug_report_file,
-        caption="<b>❌ Booking API Error</b>"
     )

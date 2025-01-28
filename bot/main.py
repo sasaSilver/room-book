@@ -8,6 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram_dialog import DialogManager, StartMode, setup_dialogs
 
 from bot.dialogs.booking_dialog import booking_dialog, BookingDialogStates
+from bot.dialogs.view_bookings_route import view_bookings_dialog, ViewBookingsDialogStates
 from bot.settings import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -21,13 +22,23 @@ properties = DefaultBotProperties(
 bot = Bot(token=BOT_TOKEN, default=properties)
 dp = Dispatcher(storage=MemoryStorage())
 dp.include_router(booking_dialog)
+dp.include_router(view_bookings_dialog)
 setup_dialogs(dp)
 
 @dp.message(F.text.in_(["/start", "Создать бронь"]))
-async def cmd_start(message: Message, dialog_manager: DialogManager):
+async def make_bookingt(message: Message, dialog_manager: DialogManager):
     await message.delete()
     await dialog_manager.start(
         BookingDialogStates.SELECT_ROOM,
+        mode=StartMode.RESET_STACK,
+        data={"user": message.from_user}
+    )
+
+@dp.message(F.text.in_(["/my", "Мои бронирования"]))
+async def view_user_bookings(message: Message, dialog_manager: DialogManager):
+    await message.delete()
+    await dialog_manager.start(
+        ViewBookingsDialogStates.VIEW_BOOKINGS,
         mode=StartMode.RESET_STACK,
         data={"user": message.from_user}
     )

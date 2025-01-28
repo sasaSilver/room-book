@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from typing import AsyncGenerator
 from bot.settings import settings
 
 DATABASE_URL = settings.db_url.replace('postgresql://', 'postgresql+asyncpg://')
@@ -17,10 +16,15 @@ async_session = sessionmaker(
     expire_on_commit=False
 )
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session() as session:
-        async with session.begin():
-            try:
-                yield session
-            finally:
-                await session.close() 
+class AsyncSessionManager:
+    async def __aenter__(self) -> AsyncSession:
+        self.session = async_session()
+        self.session.begin()
+        return self.session
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            await self.session.rollback()
+        else:
+            await self.session.commit()
+        await self.session.close()

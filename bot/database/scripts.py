@@ -1,22 +1,18 @@
-import asyncio
 from bot.database.core import engine
 from bot.database.schemas import Base
-import argparse
 
 async def do_with_tables(action: str):
     async with engine.begin() as conn:
         if action == "recreate":
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
-            print("Tables recreated successfully!")
         elif action == "create":
             await conn.run_sync(Base.metadata.create_all)
-            print("Tables created successfully!")
         elif action == "drop":
             await conn.run_sync(Base.metadata.drop_all)
-            print("Tables dropped successfully!")
 
 if __name__ == "__main__":
+    import argparse, asyncio
     parser = argparse.ArgumentParser(description='Manage database tables')
     parser.add_argument('--create', action='store_true', help='Create all tables')
     parser.add_argument('--recreate', action='store_true', help='Drop all tables and create them again')
@@ -32,5 +28,3 @@ if __name__ == "__main__":
         asyncio.run(do_with_tables("drop"))
     else:
         parser.print_help()
-    
-    
