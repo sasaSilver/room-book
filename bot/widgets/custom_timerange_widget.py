@@ -125,16 +125,19 @@ class TimeRangeWidget(Keyboard):
         )
 
         # Store selected times in dialog data if both endpoints are selected
+        if not available_timepoints_to_select and not endpoint_time_selected:
+            return []
         if len(endpoint_time_selected) == 2:
             manager.dialog_data["start_time"] = endpoint_time_selected[0].isoformat()
             manager.dialog_data["end_time"] = endpoint_time_selected[1].isoformat()
 
-        # Initialize keyboard builder
         keyboard_builder = InlineKeyboardBuilder()
         
-        # Get filtered timeslots based on selected date
-        selected_date = datetime.datetime.strptime(manager.dialog_data["selected_date"], "%Y-%m-%d").date()
+        selected_date = manager.dialog_data["selected_date"]
         timeslots = self._get_filtered_timeslots(selected_date)
+        
+        if len(timeslots) == 1 and len(endpoint_time_selected) == 0:
+            return 
         
         # Build keyboard buttons
         for timepoint in timeslots:
@@ -152,19 +155,19 @@ class TimeRangeWidget(Keyboard):
                 keyboard_builder.button(text=text, callback_data=time_callback_data)
             elif available and not blocked:
                 keyboard_builder.button(
-                    text=timepoint.strftime("%H:%M"), 
+                    text=timepoint.strftime("%H:%M"),
                     callback_data=time_callback_data
                 )
             elif booked_by_someone:
                 booking = already_booked_timepoints[timepoint]
                 if booking.username == manager.event.from_user.username:
                     keyboard_builder.button(
-                        text=EMOJI_GREEN_CIRCLE, 
+                        text=EMOJI_GREEN_CIRCLE,
                         callback_data=self._item_callback_data("None")
                     )
                 else:
                     keyboard_builder.button(
-                        text=EMOJI_RED_CIRCLE, 
+                        text=EMOJI_RED_CIRCLE,
                         url=f"https://t.me/{booking.username}"
                     )
             else:

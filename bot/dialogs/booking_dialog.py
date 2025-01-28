@@ -11,7 +11,7 @@ import datetime
 from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.widgets.custom_timerange_widget import TimeRangeWidget
 from bot.utils import (
-    ShowDoneCondition, generate_timeslots, send_error_report, create_timeslot_str
+    ShowDoneCondition, generate_timeslots, send_error_report, create_timeslot_str, short_day_of_week
 )
 import bot.database.booking_crud as booking_crud
 from bot.database.schemas import BookingSchema
@@ -40,7 +40,7 @@ async def on_date_selected(
         selected_date: datetime.date
 ):
     callback.message.delete()
-    dialog_manager.dialog_data["selected_date"] = selected_date.isoformat()
+    dialog_manager.dialog_data["selected_date"] = selected_date
     await dialog_manager.switch_to(BookingDialogStates.SELECT_BOOKING_TIME)
 
 async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):         
@@ -51,7 +51,7 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
         username=user.username,
         user_full_name=user.full_name,
         room=data["selected_room"],
-        date=datetime.date.fromisoformat(data["selected_date"]),
+        date=data["selected_date"],
         start_time=datetime.time.fromisoformat(data["start_time"]),
         end_time=datetime.time.fromisoformat(data["end_time"])
     )
@@ -77,7 +77,7 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
     result = await booking_crud.get_bookings_by_date_room(
-        datetime.date.fromisoformat(data["selected_date"]),
+        data["selected_date"],
         data["selected_room"]
     )
     if isinstance(result, Exception):
@@ -85,6 +85,7 @@ async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
         return
     return {
         "selected_date": data["selected_date"],
+        "formatted_day_of_week": short_day_of_week(data["selected_date"]),
         "selected_room": data["selected_room"],
         "daily_bookings": result
     }
@@ -147,6 +148,7 @@ async def on_dialog_close(result: BookingSchema | Exception, dm: DialogManager):
             SUCCESS_BOOKING.format(
                 room=result.room,
                 date=result.date,
+                formatted_day_of_week=short_day_of_week(result.date),
                 timeslot=timeslot_text,
                 username=result.username,
                 user_full_name=result.user_full_name

@@ -49,3 +49,20 @@ async def send_error_report(bot: Bot, data: dict, error: str):
         chat_id=god_id,
         document=bug_report_file,
     )
+
+def short_day_of_week(date: datetime.date):
+    day_abbreviations = {
+        "понедельник": "Пн",
+        "вторник": "Вт",
+        "среда": "Ср",
+        "четверг": "Чт",
+        "пятница": "Пт",
+        "суббота": "Сб",
+        "воскресенье": "Вс"
+    }
+    
+    day_name = date.strftime("%A")
+    
+    abbreviated_day = day_abbreviations.get(day_name.lower(), day_name)
+    
+    return abbreviated_day

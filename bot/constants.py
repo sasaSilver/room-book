@@ -17,7 +17,8 @@ ROOMS = ["Аудитория А", "Аудитория В", "Аудитория �
 # Window Headers
 HEADER_SELECT_ROOM = "Выберите аудиторию:"
 HEADER_SELECT_DATE = "Выберите дату брони для <b>{selected_room}</b>:"
-HEADER_SELECT_TIME = "Выберите время начала и конца брони <b>{selected_room}</b> на <b>{selected_date}</b>:"
+HEADER_SELECT_TIME = "Выберите время начала и конца брони <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>:"
+HEADER_SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{selected_room}</b> на <b>{selected_date} ({formatted_day_of_week})</b>."
 HEADER_USER_BOOKINGS = "Бронирования пользователя <a href='https://t.me/{user.username}'>{user.full_name}</a>:"
 HEADER_NO_BOOKINGS = "У пользователя <a href='https://t.me/{user.username}'>{user.full_name}</a> нет бронирований."
 
@@ -27,7 +28,7 @@ ERROR_DELETE_BOOKING = "<b><i>❌ При удалении бронировани
 ERROR_CREATE_BOOKING = "<b><i>❌ При бронировании произошла ошибка со стороны бота!</i></b>\nОтчет отправлен администратору."
 
 # Success Messages
-SUCCESS_BOOKING = "✅ <b>{room} на {date}, {timeslot} была забронирована <a href='https://t.me/{username}'>{user_full_name}</a></b>."
+SUCCESS_BOOKING = "✅ <b>{room} на {date:%d.%m} ({formatted_day_of_week}), {timeslot} была забронирована <a href='https://t.me/{username}'>{user_full_name}</a></b>."
 
 # Date and Time Formats
 DATE_FORMAT = "%d.%m"
