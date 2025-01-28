@@ -1,3 +1,5 @@
+import datetime
+
 # Emojis
 EMOJI_CROSS = "❌"
 EMOJI_GREEN_CIRCLE = "🟢"
@@ -18,9 +20,9 @@ ROOMS = ["Аудитория А", "Аудитория В", "Аудитория �
 HEADER_SELECT_ROOM = "Выберите аудиторию:"
 HEADER_SELECT_DATE = "Выберите дату брони для <b>{selected_room}</b>:"
 HEADER_SELECT_TIME = "Выберите время начала и конца брони <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>:"
-HEADER_SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{selected_room}</b> на <b>{selected_date} ({formatted_day_of_week})</b>."
+HEADER_SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>."
 HEADER_USER_BOOKINGS = "Бронирования пользователя <a href='https://t.me/{user.username}'>{user.full_name}</a>:"
-HEADER_NO_BOOKINGS = "У пользователя <a href='https://t.me/{user.username}'>{user.full_name}</a> нет бронирований."
+HEADER_USER_BOOKINGS_EMPTY = "У пользователя <a href='https://t.me/{user.username}'>{user.full_name}</a> нет бронирований."
 
 # Error Messages
 ERROR_BOT = "<b><i>❌ Произошла ошибка со стороны бота!</i></b>\nОтчет отправлен администратору."
@@ -41,3 +43,6 @@ WELCOME_MESSAGE = (
     "<i>Не удаляйте это сообщение.</i>"
 )
 
+# Booking time endpoints
+START_TIME = datetime.time(7, 30)
+END_TIME = datetime.time(18, 30)

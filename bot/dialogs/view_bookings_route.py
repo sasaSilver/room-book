@@ -1,8 +1,8 @@
 from typing import Dict
 from aiogram import F
 from aiogram_dialog import Dialog, DialogManager, Window, SubManager
-from aiogram_dialog.widgets.kbd import ListGroup, Row, Button, Back
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.kbd import ListGroup, Row, Button
+from aiogram_dialog.widgets.text import Const, Format, Case
 
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
@@ -12,7 +12,7 @@ from bot.utils import send_error_report
 from bot.database.schemas.booking_schema import BookingSchema
 from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.constants import (
-    BTN_CANCEL, HEADER_USER_BOOKINGS, HEADER_NO_BOOKINGS,
+    BTN_CANCEL, HEADER_USER_BOOKINGS, HEADER_USER_BOOKINGS_EMPTY,
     BTN_BACK, ERROR_BOT, ERROR_DELETE_BOOKING,
     DATE_FORMAT, TIME_FORMAT
 )
@@ -59,13 +59,12 @@ async def delete_booking(callback: CallbackQuery, button: Button, manager: SubMa
         await manager.done()
 
 user_bookings_window = Window(
-    Format(
-        HEADER_USER_BOOKINGS,
-        when=F['dialog_data']['bookings'].len() > 0
-    ),
-    Format(
-        HEADER_NO_BOOKINGS,
-        when=F['dialog_data']['bookings'].len() == 0
+    Case(
+        {
+            0: Format(HEADER_USER_BOOKINGS_EMPTY),
+            1: Format(HEADER_USER_BOOKINGS),
+        },
+        selector=F['dialog_data']['bookings'].len()
     ),
     ListGroup(
         Row(

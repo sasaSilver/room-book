@@ -1,15 +1,7 @@
 from aiogram import Bot
 from aiogram.types import BufferedInputFile
-from aiogram_dialog import DialogManager
-from aiogram_dialog.widgets.common import Whenable
-from aiogram_dialog.widgets.common.when import Predicate
 import datetime
 from bot.settings import settings
-
-class ShowDoneCondition(Predicate):
-    def __call__(self, data: dict, _widget: Whenable, dialog_manager: DialogManager) -> bool:
-        data = dialog_manager.dialog_data
-        return data.get("start_time", False) and data.get("end_time", False)
     
 def generate_timeslots(start_time: datetime.time, end_time: datetime.time, interval: int) -> list[datetime.time]:
     timeslots = []

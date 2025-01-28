@@ -137,7 +137,7 @@ class TimeRangeWidget(Keyboard):
         timeslots = self._get_filtered_timeslots(selected_date)
         
         if len(timeslots) == 1 and len(endpoint_time_selected) == 0:
-            return 
+            return []
         
         # Build keyboard buttons
         for timepoint in timeslots:

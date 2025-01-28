@@ -1,8 +1,9 @@
+from aiogram import F
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import (
     Button, Row, Calendar, CalendarConfig, Group, Back
 )
-from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.text import Const, Format, Case
 from aiogram.types import CallbackQuery, User
 from aiogram.fsm.state import State, StatesGroup
 
@@ -11,14 +12,15 @@ import datetime
 from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.widgets.custom_timerange_widget import TimeRangeWidget
 from bot.utils import (
-    ShowDoneCondition, generate_timeslots, send_error_report, create_timeslot_str, short_day_of_week
+    generate_timeslots, send_error_report, create_timeslot_str, short_day_of_week
 )
 import bot.database.booking_crud as booking_crud
 from bot.database.schemas import BookingSchema
 from bot.constants import (
     HEADER_SELECT_ROOM, HEADER_SELECT_DATE, HEADER_SELECT_TIME,
     BTN_CANCEL, BTN_BACK, BTN_FINISH,
-    ERROR_CREATE_BOOKING, ROOMS, SUCCESS_BOOKING,
+    ERROR_CREATE_BOOKING, HEADER_SELECT_TIME_EMPTY, ROOMS, SUCCESS_BOOKING,
+    START_TIME, END_TIME
 )
 
 class BookingDialogStates(StatesGroup):
@@ -76,18 +78,21 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
-    result = await booking_crud.get_bookings_by_date_room(
-        data["selected_date"],
-        data["selected_room"]
-    )
-    if isinstance(result, Exception):
-        await dialog_manager.done(result=result)
-        return
+    try:
+        result = await booking_crud.get_bookings_by_date_room(
+            data["selected_date"],
+            data["selected_room"]
+        )
+    except Exception as e:
+        await dialog_manager.done(result=e)
+    now = datetime.datetime.now()
+    has_timeslots = now < datetime.datetime.combine(data["selected_date"], END_TIME)
     return {
         "selected_date": data["selected_date"],
         "formatted_day_of_week": short_day_of_week(data["selected_date"]),
         "selected_room": data["selected_room"],
-        "daily_bookings": result
+        "daily_bookings": result,
+        "has_timeslots": has_timeslots,
     }
 
 select_room_window = Window(
@@ -116,12 +121,18 @@ select_date_window = Window(
 )
 
 time_selection_widget = TimeRangeWidget(
-    timepoints=generate_timeslots(datetime.time(7, 0), datetime.time(18, 30), 30),
+    timepoints=generate_timeslots(START_TIME, END_TIME, 30),
     id="time_selection"
 )
 
 select_time_window = Window(
-    Format(HEADER_SELECT_TIME),
+    Case(
+        {
+            0: Format(HEADER_SELECT_TIME_EMPTY),
+            1: Format(HEADER_SELECT_TIME)
+        },
+        selector="has_timeslots"
+    ),
     Group(time_selection_widget, width=4),
     Row(
         Back(Const(BTN_BACK), on_click=reset_time_selection),
@@ -129,7 +140,7 @@ select_time_window = Window(
             Const(BTN_FINISH),
             id="btn_time_selected",
             on_click=on_time_confirmed,
-            when=ShowDoneCondition()
+            when=F["dialog_data"]["start_time"] and F["dialog_data"]["end_time"]
         ),
     ),
     CustomCancel(Const(BTN_CANCEL)),
