@@ -1,17 +1,15 @@
 # Emojis
 EMOJI_CROSS = "❌"
-EMOJI_BACK_ARROW = "⬅️"
 EMOJI_GREEN_CIRCLE = "🟢"
 EMOJI_RED_CIRCLE = "🔴"
 EMOJI_CHECK = "✅"
 
 # Button Text
-BTN_CANCEL = f"{EMOJI_CROSS} Отмена"
-BTN_BACK = f"{EMOJI_BACK_ARROW} Назад"
+BTN_CANCEL = f"❌ Отмена"
+BTN_BACK = f"⬅️ Назад"
+BTN_FINISH = f"✅ Завершить"
 CREATE_BOOKING_TEXT = "Создать бронь"
 MY_BOOKINGS_TEXT = "Мои бронирования"
-BTN_CANCEL_BOOKING = f"{EMOJI_CROSS} Отменить"
-BTN_FINISH = f"Завершить {EMOJI_CHECK}"
 
 # Room Names
 ROOMS = ["Аудитория А", "Аудитория В", "Аудитория С"]

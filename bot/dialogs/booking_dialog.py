@@ -91,10 +91,10 @@ async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
 
 select_room_window = Window(
     Const(HEADER_SELECT_ROOM),
-    Row(
-        Button(Const(room), id=f"{room}", on_click=on_room_selected)
-            for room in ROOMS
-    ),
+    Row(*[
+        Button(Const(room), id=f"room_{i}", on_click=on_room_selected)
+          for i, room in enumerate(ROOMS)
+    ]),
     CustomCancel(Const(BTN_CANCEL)),
     state=BookingDialogStates.SELECT_ROOM
 )

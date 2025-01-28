@@ -12,8 +12,9 @@ from bot.utils import send_error_report
 from bot.database.schemas.booking_schema import BookingSchema
 from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.constants import (
-    HEADER_USER_BOOKINGS, HEADER_NO_BOOKINGS, BTN_CANCEL_BOOKING,
-    BTN_BACK, ERROR_BOT, ERROR_DELETE_BOOKING, DATE_FORMAT, TIME_FORMAT
+    BTN_CANCEL, HEADER_USER_BOOKINGS, HEADER_NO_BOOKINGS,
+    BTN_BACK, ERROR_BOT, ERROR_DELETE_BOOKING,
+    DATE_FORMAT, TIME_FORMAT
 )
 
 class ViewBookingsDialogStates(StatesGroup):
@@ -73,7 +74,7 @@ user_bookings_window = Window(
                 id="booking_details"
             ),
             Button(
-                Const(BTN_CANCEL_BOOKING),
+                Const(BTN_CANCEL),
                 id="delete_booking",
                 on_click=delete_booking
             ),
