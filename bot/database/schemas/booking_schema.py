@@ -1,5 +1,9 @@
 from sqlalchemy import String, Date, Time, Integer, Index, CheckConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from sqlalchemy import Index, CheckConstraint, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import Integer, String, Date, Time
+from sqlalchemy.sql import func
 
 class Base(DeclarativeBase):
     ...
@@ -20,4 +24,8 @@ class BookingSchema(Base):
         Index('idx_room_date', 'room', 'date'),
         CheckConstraint('end_time > start_time', name='check_time_order'),
         CheckConstraint(date >= func.current_date(), name='check_future_date'),
+        # костыль, хз как проверить, чтобы таймслоты не пересекались
+        # TODO: добавить проверку на пересечение таймслотов
+        UniqueConstraint('room', 'date', 'start_time', name='unique_room_date_start_time'),
+        UniqueConstraint('room', 'date', 'end_time', name='unique_room_date_end_time'),
     )

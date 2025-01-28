@@ -10,7 +10,7 @@ from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
 
 from bot.kbd import get_main_rkeyboard as main_rkeyboard
 from bot.dialogs.booking_dialog import booking_dialog, BookingDialogStates
-from bot.dialogs.view_bookings_route import view_bookings_dialog, ViewBookingsDialogStates
+from bot.dialogs.view_bookings_dialog import view_bookings_dialog, ViewBookingsDialogStates
 from bot.settings import settings
 from bot.constants import (
     CREATE_BOOKING_TEXT, MY_BOOKINGS_TEXT, WELCOME_MESSAGE
@@ -62,9 +62,11 @@ async def view_user_bookings(message: Message, dialog_manager: DialogManager):
 async def on_bot_chat_member_update(event: ChatMemberUpdated):
     if event.chat.type == "private":
         return  # Only for group chats
+    
+    user = event.from_user
     message = await bot.send_message(
         event.chat.id,
-        " ",
+        WELCOME_MESSAGE.format(user=user),
         reply_markup=main_rkeyboard()
     )
     await message.delete()

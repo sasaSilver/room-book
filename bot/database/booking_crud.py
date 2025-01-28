@@ -19,6 +19,7 @@ def db_operation(func):
 @db_operation
 async def create_booking(session: AsyncSession, booking: BookingSchema) -> None:
     session.add(booking)
+    return booking
     
 @db_operation
 async def get_bookings_by_date_room(session: AsyncSession, date: datetime.date, room: str) -> List[BookingSchema]:
@@ -28,9 +29,19 @@ async def get_bookings_by_date_room(session: AsyncSession, date: datetime.date, 
     return result.scalars().all()
 
 @db_operation
+async def get_booking_by_id(session: AsyncSession, booking_id: int) -> BookingSchema:
+    result = await session.execute(
+        select(BookingSchema).where(BookingSchema.id == booking_id)
+    )
+    return result.scalars().first()
+
+@db_operation
 async def get_bookings_by_username(session: AsyncSession, username: str) -> List[BookingSchema]:
     result = await session.execute(
-        select(BookingSchema).where(BookingSchema.username == username)
+        select(BookingSchema).
+        where(BookingSchema.username == username).
+        order_by(BookingSchema.date).
+        order_by(BookingSchema.start_time)
     )
     return result.scalars().all()
 

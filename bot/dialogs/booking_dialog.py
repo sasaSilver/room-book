@@ -57,11 +57,12 @@ async def on_time_confirmed(callback: CallbackQuery, _button: Button, dialog_man
         start_time=datetime.time.fromisoformat(data["start_time"]),
         end_time=datetime.time.fromisoformat(data["end_time"])
     )
+    
     try:
         await booking_crud.create_booking(booking)
     except Exception as e:
         await dialog_manager.done(result=e)
-        return
+    
     await dialog_manager.done(result=booking)
 
 async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
@@ -78,6 +79,7 @@ async def getter_date_selection(dialog_manager: DialogManager, **_kwargs):
 
 async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
+    
     try:
         result = await booking_crud.get_bookings_by_date_room(
             data["selected_date"],
@@ -85,6 +87,7 @@ async def getter_time_selection(dialog_manager: DialogManager, **_kwargs):
         )
     except Exception as e:
         await dialog_manager.done(result=e)
+        
     now = datetime.datetime.now()
     has_timeslots = now < datetime.datetime.combine(data["selected_date"], END_TIME)
     return {
