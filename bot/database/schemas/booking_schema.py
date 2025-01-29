@@ -6,7 +6,7 @@ from sqlalchemy.types import Integer, String, Date, Time
 from sqlalchemy.sql import func
 
 class Base(DeclarativeBase):
-    ...
+    pass
 
 class BookingSchema(Base):
     __tablename__ = "bookings"

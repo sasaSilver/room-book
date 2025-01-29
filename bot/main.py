@@ -9,14 +9,15 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
 
 from bot.kbd import get_main_rkeyboard as main_rkeyboard
-from bot.dialogs.booking_dialog import booking_dialog, BookingDialogStates
-from bot.dialogs.view_bookings_dialog import view_bookings_dialog, ViewBookingsDialogStates
+from bot.routers.user.booking_dialog import booking_dialog, BookingDialogStates
+from bot.routers.user.view_bookings_dialog import view_bookings_dialog, ViewBookingsDialogStates
 from bot.settings import settings
 from bot.constants import (
     CREATE_BOOKING_TEXT, MY_BOOKINGS_TEXT, WELCOME_MESSAGE
 )
 
 logging.basicConfig(level=logging.INFO)
+locale.setlocale(locale.LC_ALL, '')
 
 BOT_TOKEN = settings.token
 properties = DefaultBotProperties(
@@ -43,7 +44,7 @@ async def make_bookingt(message: Message, dialog_manager: DialogManager):
     await dialog_manager.start(
         BookingDialogStates.SELECT_ROOM,
         mode=StartMode.RESET_STACK,
-        show_mode=ShowMode.DELETE_AND_SEND,
+        show_mode=ShowMode.EDIT,
         data={"user": message.from_user}
     )
     await message.delete()
@@ -53,7 +54,7 @@ async def view_user_bookings(message: Message, dialog_manager: DialogManager):
     await dialog_manager.start(
         ViewBookingsDialogStates.VIEW_BOOKINGS,
         mode=StartMode.RESET_STACK,
-        show_mode=ShowMode.DELETE_AND_SEND,
+        show_mode=ShowMode.EDIT,
         data={"user": message.from_user}
     )
     await message.delete()
@@ -61,7 +62,7 @@ async def view_user_bookings(message: Message, dialog_manager: DialogManager):
 @dp.my_chat_member()
 async def on_bot_chat_member_update(event: ChatMemberUpdated):
     if event.chat.type == "private":
-        return  # Only for group chats
+        return
     
     user = event.from_user
     message = await bot.send_message(
@@ -72,5 +73,10 @@ async def on_bot_chat_member_update(event: ChatMemberUpdated):
     await message.delete()
 
 if __name__ == "__main__":
-    locale.setlocale(locale.LC_ALL, '')
-    asyncio.run(dp.start_polling(bot, skip_updates=True))
+    asyncio.run(dp.start_polling(
+        bot,
+        skip_updates=True,
+        handle_as_tasks=True,
+        close_bot_session=True,
+        handle_signals=True
+    ))
