@@ -56,7 +56,7 @@ async def get_bookings_by_username(session: AsyncSession, username: str) -> List
     return result.scalars().all()
 
 @inject_session
-async def delete_booking(session: AsyncSession, booking_id: int) -> None:
+async def delete_booking_by_id(session: AsyncSession, booking_id: int) -> None:
     await session.execute(
         delete(BookingSchema).where(BookingSchema.id == booking_id)
     )

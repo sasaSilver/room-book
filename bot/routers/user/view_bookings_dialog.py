@@ -12,7 +12,7 @@ import bot.database.db_crud as db_crud
 from bot.utils import create_timeslot_str, send_error_report, short_day_of_week
 from bot.database.schemas.booking_schema import BookingSchema
 from bot.constants import (
-    USER_BOOKINGS_TEMPLATE, USER_BOOKINGS_EMPTY_TEMPLATE,
+    BTN_CANCELLED_TEXT, USER_BOOKINGS_TEMPLATE, USER_BOOKINGS_EMPTY_TEMPLATE,
     DATE_FORMAT, TIME_FORMAT,
     BTN_CANCEL_TEXT, BTN_FINISH_TEXT,
     SUCCESS_USER_CANCELLED_TEMPLATE,
@@ -26,20 +26,26 @@ class ViewBookingsDialogStates(StatesGroup):
     
 async def on_dialog_start(_callback: CallbackQuery, dialog_manager: DialogManager):
     dialog_manager.dialog_data["user"] = dialog_manager.start_data["user"]
-    dialog_manager.dialog_data["cancelled_bookings"] = []
+    dialog_manager.dialog_data["bookings_to_cancel"] = []
     
 def format_booking(booking: BookingSchema) -> Dict[str, str]:
     return {
         "id": booking.id,
         "room": booking.room,
         "booking_details": (
-            f"{booking.date.strftime(DATE_FORMAT)}: "
+            f"{booking.date.strftime(DATE_FORMAT)}\n"
             f"{booking.start_time.strftime(TIME_FORMAT)}-{booking.end_time.strftime(TIME_FORMAT)}"
         )
     }
 
 async def fetch_user_bookings(**kwargs):
     dm: DialogManager = kwargs['dialog_manager']
+
+    if formatted_bookings := dm.dialog_data.get("cached_bookings", False):
+        return {
+            "user": dm.dialog_data["user"],
+            "bookings": dm.dialog_data["cached_bookings"]
+        }
     
     try:
        user_bookings = await db_crud.get_bookings_by_username(dm.dialog_data["user"].username)
@@ -48,21 +54,21 @@ async def fetch_user_bookings(**kwargs):
         await dm.done(result=e)
         
     formatted_bookings = [format_booking(booking) for booking in user_bookings]
-    dm.dialog_data["bookings"] = formatted_bookings
+    dm.dialog_data["cached_bookings"] = formatted_bookings
     return {
         "user": dm.dialog_data["user"],
         "bookings": formatted_bookings
     }
 
-async def cancel_booking(_callback: CallbackQuery, _button: Button, submanager: SubManager):
+async def flag_booking_for_cancel(_callback: CallbackQuery, button: Button, submanager: SubManager):
     booking_id = int(submanager.item_id)
-    try:
-        booking = await db_crud.get_booking_by_id(booking_id)
-        submanager.manager.dialog_data["cancelled_bookings"].append(booking)
-        await db_crud.delete_booking(booking_id)
-    except Exception as e:
-        submanager.manager.dialog_data["error_type"] = "Cancel booking"
-        await submanager.manager.done(result=e)
+    to_cancel = button.text.text == BTN_CANCEL_TEXT
+    if to_cancel:
+        submanager.manager.dialog_data["bookings_to_cancel"].append(booking_id)
+        button.text = Const(BTN_CANCELLED_TEXT)
+    else:
+        submanager.manager.dialog_data["bookings_to_cancel"].remove(booking_id)
+        button.text = Const(BTN_CANCEL_TEXT)
     
 
 user_bookings_window = Window(
@@ -71,7 +77,7 @@ user_bookings_window = Window(
             True: Format(USER_BOOKINGS_TEMPLATE),
             False: Format(USER_BOOKINGS_EMPTY_TEMPLATE),
         },
-        selector=F['dialog_data']['bookings'].len() > 0
+        selector=F['bookings'].len() > 0
     ),
     ListGroup(
         Row(
@@ -85,8 +91,8 @@ user_bookings_window = Window(
             ),
             Button(
                 Const(BTN_CANCEL_TEXT),
-                id="delete_booking",
-                on_click=cancel_booking
+                id="btn_delete_booking",
+                on_click=flag_booking_for_cancel
             ),
         ),
         id="user_bookings",
@@ -98,14 +104,27 @@ user_bookings_window = Window(
     getter=fetch_user_bookings
 )
 
-async def on_dialog_close(error: Optional[Exception], dm: DialogManager):
-    if isinstance(error, Exception):
+async def on_dialog_close(result: Optional[Exception], dm: DialogManager):
+    if isinstance(error := result, Exception):
         await dm.event.message.answer(ERROR_CANCEL_BOOKING_TEXT)
         await send_error_report(dm.event.bot, dm.dialog_data, str(error))
         return
-    cancelled_bookings: List[BookingSchema] = dm.dialog_data["cancelled_bookings"]
-    if len(cancelled_bookings) == 0:
+    
+    bookings_to_cancel = dm.dialog_data["bookings_to_cancel"]
+    if len(bookings_to_cancel) == 0:
         return
+    
+    cancelled_bookings: List[BookingSchema] = []
+    try:
+        for booking_id in bookings_to_cancel:
+            booking = await db_crud.get_booking_by_id(booking_id)
+            cancelled_bookings.append(booking)
+            await db_crud.delete_booking_by_id(booking_id)
+    except Exception as e:
+        dm.dialog_data["error_type"] = "Cancel booking"
+        await send_error_report(dm.event.bot, dm.dialog_data, str(error))
+        return
+    
     canceled_bookings_text = "\n".join(
         CANCELLED_BOOKING_TEMPLATE.format(
             room=booking.room,
@@ -114,11 +133,11 @@ async def on_dialog_close(error: Optional[Exception], dm: DialogManager):
             timeslot=create_timeslot_str(booking.start_time, booking.end_time),
             username=booking.username,
             user_full_name=booking.user_full_name,
-        )
-        for booking in cancelled_bookings
+        ) for booking in cancelled_bookings
     )
+    user_cancelled_bookings_text = SUCCESS_USER_CANCELLED_TEMPLATE.format(user=dm.event.from_user)
     await dm.event.message.answer(
-        "\n\n".join([SUCCESS_USER_CANCELLED_TEMPLATE.format(user=dm.event.from_user), canceled_bookings_text])
+        "\n\n".join([user_cancelled_bookings_text, canceled_bookings_text])
     )
 
 view_bookings_dialog = Dialog(

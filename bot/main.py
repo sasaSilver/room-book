@@ -13,7 +13,7 @@ from bot.routers.user.booking_dialog import booking_dialog, BookingDialogStates
 from bot.routers.user.view_bookings_dialog import view_bookings_dialog, ViewBookingsDialogStates
 from bot.settings import settings
 from bot.constants import (
-    CREATE_BOOKING_TEXT, MY_BOOKINGS_TEXT, WELCOME_MESSAGE
+    CREATE_BOOKING_TEXT, MY_BOOKINGS_TEXT, WELCOME_MESSAGE_TEMPLATE
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -32,10 +32,10 @@ dp.include_router(view_bookings_dialog)
 setup_dialogs(dp)
 
 @dp.message(Command("start"))
-async def start(message: Message, dialog_manager: DialogManager):
+async def start(message: Message):
     user: User = message.from_user
     await message.answer(
-        WELCOME_MESSAGE.format(user=user),
+        WELCOME_MESSAGE_TEMPLATE.format(user=user),
         reply_markup=main_rkeyboard()
     )
 
@@ -53,7 +53,7 @@ async def make_bookingt(message: Message, dialog_manager: DialogManager):
 async def view_user_bookings(message: Message, dialog_manager: DialogManager):
     await dialog_manager.start(
         ViewBookingsDialogStates.VIEW_BOOKINGS,
-        mode=StartMode.RESET_STACK,
+        mode=StartMode.NEW_STACK,
         show_mode=ShowMode.EDIT,
         data={"user": message.from_user}
     )
@@ -67,7 +67,7 @@ async def on_bot_chat_member_update(event: ChatMemberUpdated):
     user = event.from_user
     message = await bot.send_message(
         event.chat.id,
-        WELCOME_MESSAGE.format(user=user),
+        WELCOME_MESSAGE_TEMPLATE.format(user=user),
         reply_markup=main_rkeyboard()
     )
     await message.delete()
@@ -76,7 +76,6 @@ if __name__ == "__main__":
     asyncio.run(dp.start_polling(
         bot,
         skip_updates=True,
-        handle_as_tasks=True,
         close_bot_session=True,
         handle_signals=True
     ))

@@ -67,11 +67,15 @@ async def create_booking(callback: CallbackQuery, _button: Button, dialog_manage
     await dialog_manager.done(result=booking)
     await callback.message.delete()
 
-async def reset_time_selection(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
+async def clear_date_selection_cache(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.pop("cached_bookings", None)
+
+async def clear_date_time_cache(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
     time_selection_widget: TimeRangeWidget = dialog_manager.find("time_selection")
     time_selection_widget.reset(dialog_manager)
     dialog_manager.dialog_data.pop("start_time", None)
     dialog_manager.dialog_data.pop("end_time", None)
+    dialog_manager.dialog_data.pop("cached_bookings", None)
 
 async def get_selected_room(dialog_manager: DialogManager, **_kwargs):
     room = dialog_manager.dialog_data["selected_room"]
@@ -82,24 +86,32 @@ async def get_selected_room(dialog_manager: DialogManager, **_kwargs):
 async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
     
-    try:
-        result = await db_crud.get_bookings_by_date_room(
-            data["selected_date"],
-            data["selected_room"]
-        )
-    except Exception as e:
-        await dialog_manager.done(result=e)
-        
     now = datetime.datetime.now()
-    # checks that current time is less than END_TIME
     has_timeslots = now < datetime.datetime.combine(data["selected_date"], END_TIME)
-    return {
+    
+    partial_result = {
         "selected_date": data["selected_date"],
         "formatted_day_of_week": short_day_of_week(data["selected_date"]),
         "selected_room": data["selected_room"],
-        "daily_bookings": result,
         "has_timeslots": has_timeslots,
+        "daily_bookings": None,
     }
+    
+    if "cached_bookings" in data:
+        partial_result["daily_bookings"] = data["cached_bookings"]
+        return partial_result
+    
+    try:
+        daily_bookings = await db_crud.get_bookings_by_date_room(
+            data["selected_date"], data["selected_room"]
+        )
+        print("FETCHED BOOKINGS")
+    except Exception as e:
+        await dialog_manager.done(result=e)
+        
+    partial_result["daily_bookings"] = daily_bookings
+    dialog_manager.dialog_data["cached_bookings"] = daily_bookings
+    return partial_result
 
 select_room_window = Window(
     Const(SELECT_ROOM_TEXT),
@@ -141,7 +153,7 @@ select_time_window = Window(
     ),
     Group(time_selection_widget, width=4),
     Row(
-        Back(Const(BTN_BACK_TEXT), on_click=reset_time_selection),
+        Back(Const(BTN_BACK_TEXT), on_click=clear_date_time_cache),
         Button(
             Const(BTN_FINISH_TEXT),
             id="btn_time_selected",

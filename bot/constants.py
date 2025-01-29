@@ -14,6 +14,7 @@ EMOJI_CHECK = "✅"
 
 # Button Text
 BTN_CANCEL_TEXT = f"❌ Отмена"
+BTN_CANCELLED_TEXT = f"Отменено"
 BTN_BACK_TEXT = f"⬅️ Назад"
 BTN_FINISH_TEXT = f"✅ Завершить"
 CREATE_BOOKING_TEXT = "Создать бронь"
@@ -48,7 +49,7 @@ DATE_FORMAT = "%d.%m"
 TIME_FORMAT = "%H:%M"
 
 # "Registration" message
-WELCOME_MESSAGE = (
+WELCOME_MESSAGE_TEMPLATE = (
     "Пользователь <a href='https://t.me/{user.username}'>{user.full_name}</a> зарегистрирован.\n"
     "<i>Не удаляйте это сообщение.</i>"
 )
