@@ -13,8 +13,8 @@ EMOJI_RED_CIRCLE = "🔴"
 EMOJI_CHECK = "✅"
 
 # Button Text
-BTN_CANCEL_TEXT = f"❌ Отмена"
-BTN_CANCELLED_TEXT = f"Отменено"
+BTN_CANCEL_TEXT = f"❌ Отменить"
+BTN_CANCELLED_TEXT = f"🟢 Не отменять"
 BTN_BACK_TEXT = f"⬅️ Назад"
 BTN_FINISH_TEXT = f"✅ Завершить"
 CREATE_BOOKING_TEXT = "Создать бронь"

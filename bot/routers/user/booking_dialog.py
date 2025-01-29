@@ -67,9 +67,6 @@ async def create_booking(callback: CallbackQuery, _button: Button, dialog_manage
     await dialog_manager.done(result=booking)
     await callback.message.delete()
 
-async def clear_date_selection_cache(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
-    dialog_manager.dialog_data.pop("cached_bookings", None)
-
 async def clear_date_time_cache(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
     time_selection_widget: TimeRangeWidget = dialog_manager.find("time_selection")
     time_selection_widget.reset(dialog_manager)

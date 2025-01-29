@@ -91,7 +91,7 @@ user_bookings_window = Window(
             ),
             Button(
                 Const(BTN_CANCEL_TEXT),
-                id="btn_delete_booking",
+                id="btn_cancel_{item[id]}",
                 on_click=flag_booking_for_cancel
             ),
         ),
