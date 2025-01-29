@@ -17,13 +17,9 @@ from bot.utils import (
 import bot.database.db_crud as db_crud
 from bot.database.schemas import BookingSchema
 from bot.constants import (
-    AVAILABLE_ROOMS, START_TIME, END_TIME, TIMESLOT_DURATION,
-    SELECT_ROOM_TEXT, SELECT_DATE_TEMPLATE, SELECT_TIME_TEMPLATE, SELECT_TIME_EMPTY_TEMPLATE,
-    BTN_CANCEL_TEXT, BTN_BACK_TEXT, BTN_FINISH_TEXT,
-    SUCCESS_BOOKING_TEMPLATE,
-    ERROR_BOOKING_TEXT
+    TEXT, TEMPLATE, BTN_TEXT,
+    AVAILABLE_ROOMS, START_TIME, END_TIME, TIMESLOT_DURATION
 )
-
 class BookingDialogStates(StatesGroup):
     SELECT_ROOM = State()
     SELECT_DATE = State()
@@ -108,28 +104,29 @@ async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
         
     partial_result["daily_bookings"] = daily_bookings
     dialog_manager.dialog_data["cached_bookings"] = daily_bookings
+    # store fetched bookings as "cache" in dialog data to not refetch on window re-render
     return partial_result
 
 select_room_window = Window(
-    Const(SELECT_ROOM_TEXT),
+    Const(TEXT.SELECT_ROOM),
     Row(*[
         Button(Const(room), id=f"btn_room", on_click=select_this_room)
           for room in AVAILABLE_ROOMS
     ]),
-    CustomCancel(Const(BTN_CANCEL_TEXT)),
+    CustomCancel(Const(BTN_TEXT.CANCEL)),
     state=BookingDialogStates.SELECT_ROOM
 )
 
 select_date_window = Window(
-    Format(SELECT_DATE_TEMPLATE),
+    Format(TEMPLATE.SELECT_DATE),
     Calendar(
         id="calendar",
         on_click=select_chosen_date,
         config=CalendarConfig(min_date=datetime.date.today()),
     ),
     Row(
-        Back(Const(BTN_BACK_TEXT)),
-        CustomCancel(Const(BTN_CANCEL_TEXT)),
+        Back(Const(BTN_TEXT.BACK)),
+        CustomCancel(Const(BTN_TEXT.CANCEL)),
     ),
     getter=get_selected_room,
     state=BookingDialogStates.SELECT_DATE,
@@ -143,35 +140,35 @@ time_selection_widget = TimeRangeWidget(
 select_time_window = Window(
     Case(
         {
-            0: Format(SELECT_TIME_EMPTY_TEMPLATE),
-            1: Format(SELECT_TIME_TEMPLATE)
+            0: Format(TEMPLATE.SELECT_TIME_EMPTY),
+            1: Format(TEMPLATE.SELECT_TIME),
         },
         selector="has_timeslots"
     ),
     Group(time_selection_widget, width=4),
     Row(
-        Back(Const(BTN_BACK_TEXT), on_click=clear_date_time_cache),
+        Back(Const(BTN_TEXT.BACK), on_click=clear_date_time_cache),
         Button(
-            Const(BTN_FINISH_TEXT),
+            Const(BTN_TEXT.FINISH),
             id="btn_time_selected",
             on_click=create_booking,
             when=F["dialog_data"]["start_time"] and F["dialog_data"]["end_time"]
         ),
     ),
-    CustomCancel(Const(BTN_CANCEL_TEXT)),
+    CustomCancel(Const(BTN_TEXT.CANCEL)),
     state=BookingDialogStates.SELECT_BOOKING_TIME,
     getter=get_daily_bookings
 )
 
 async def on_dialog_close(result: BookingSchema | Exception, dm: DialogManager):
     if isinstance(error := result, Exception):
-        await dm.event.message.answer(ERROR_BOOKING_TEXT)
+        await dm.event.message.answer(TEXT.ERROR_BOOKING)
         dm.dialog_data["error_type"] = "Booking"
         await send_error_report(dm.event.bot, dm.dialog_data, str(error))
     elif isinstance(booking := result, BookingSchema):
         timeslot_text = create_timeslot_str(booking.start_time, booking.end_time)
         await dm.event.message.answer(
-            SUCCESS_BOOKING_TEMPLATE.format(
+            TEMPLATE.SUCCESS_BOOKING.format(
                 room=booking.room,
                 date=booking.date,
                 formatted_day_of_week=short_day_of_week(booking.date),

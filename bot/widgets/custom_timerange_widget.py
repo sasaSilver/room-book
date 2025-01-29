@@ -6,9 +6,12 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_dialog import DialogManager, DialogProtocol
 from aiogram_dialog.widgets.common import WhenCondition
 from aiogram_dialog.widgets.kbd import Keyboard
-from bot.constants import EMOJI_GREEN_CIRCLE, EMOJI_RED_CIRCLE
 
 class Booking(TypedDict):
+    """
+    Interface with booking instances for this widget.
+    Actual booking class definition is up to devs.
+    """
     id: int
     username: str
     user_full_name: str
@@ -19,7 +22,8 @@ class Booking(TypedDict):
 
 class TimeRangeWidget(Keyboard):
     """
-    Widget for time selection: 07:00, 07:30, 08:00, ...
+    Widget for time selection: 07:00, 07:30, 08:00, ...\n
+    Stores selected timepoints in widget_data.
     """
 
     def reset(self, manager: DialogManager):
@@ -162,12 +166,12 @@ class TimeRangeWidget(Keyboard):
                 booking = already_booked_timepoints[timepoint]
                 if booking.username == manager.event.from_user.username:
                     keyboard_builder.button(
-                        text=EMOJI_GREEN_CIRCLE,
+                        text="🟢",
                         callback_data=self._item_callback_data("None")
                     )
                 else:
                     keyboard_builder.button(
-                        text=EMOJI_RED_CIRCLE,
+                        text="🔴",
                         url=f"https://t.me/{booking.username}"
                     )
             else:

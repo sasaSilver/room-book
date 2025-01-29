@@ -1,5 +1,5 @@
 from aiogram_dialog import Dialog, DialogManager, Window, SubManager
-from aiogram_dialog.widgets.kbd import ListGroup, Row, Button
+from aiogram_dialog.widgets.kbd import ListGroup, Row, Button, Checkbox, ManagedCheckbox
 from aiogram_dialog.widgets.text import Const, Format, Case
 
 from aiogram import F
@@ -11,14 +11,7 @@ from typing import Dict, List, Optional
 import bot.database.db_crud as db_crud
 from bot.utils import create_timeslot_str, send_error_report, short_day_of_week
 from bot.database.schemas.booking_schema import BookingSchema
-from bot.constants import (
-    BTN_CANCELLED_TEXT, USER_BOOKINGS_TEMPLATE, USER_BOOKINGS_EMPTY_TEMPLATE,
-    DATE_FORMAT, TIME_FORMAT,
-    BTN_CANCEL_TEXT, BTN_FINISH_TEXT,
-    SUCCESS_USER_CANCELLED_TEMPLATE,
-    CANCELLED_BOOKING_TEMPLATE,
-    ERROR_CANCEL_BOOKING_TEXT
-)
+from bot.constants import TEXT, TEMPLATE, BTN_TEXT, FORMAT
 from bot.widgets.custom_cancel_widget import CustomCancel
 
 class ViewBookingsDialogStates(StatesGroup):
@@ -33,8 +26,8 @@ def format_booking(booking: BookingSchema) -> Dict[str, str]:
         "id": booking.id,
         "room": booking.room,
         "booking_details": (
-            f"{booking.date.strftime(DATE_FORMAT)}\n"
-            f"{booking.start_time.strftime(TIME_FORMAT)}-{booking.end_time.strftime(TIME_FORMAT)}"
+            f"{booking.date.strftime(FORMAT.DATE)}\n"
+            f"{booking.start_time.strftime(FORMAT.TIME)}-{booking.end_time.strftime(FORMAT.TIME)}"
         )
     }
 
@@ -60,22 +53,19 @@ async def fetch_user_bookings(**kwargs):
         "bookings": formatted_bookings
     }
 
-async def flag_booking_for_cancel(_callback: CallbackQuery, button: Button, submanager: SubManager):
+async def flag_booking_for_cancel(_callback: CallbackQuery, button: ManagedCheckbox, submanager: SubManager):
     booking_id = int(submanager.item_id)
-    to_cancel = button.text.text == BTN_CANCEL_TEXT
-    if to_cancel:
+    if button.is_checked():
         submanager.manager.dialog_data["bookings_to_cancel"].append(booking_id)
-        button.text = Const(BTN_CANCELLED_TEXT)
     else:
         submanager.manager.dialog_data["bookings_to_cancel"].remove(booking_id)
-        button.text = Const(BTN_CANCEL_TEXT)
     
 
 user_bookings_window = Window(
     Case(
         {
-            True: Format(USER_BOOKINGS_TEMPLATE),
-            False: Format(USER_BOOKINGS_EMPTY_TEMPLATE),
+            True: Format(TEMPLATE.USER_BOOKINGS),
+            False: Format(TEMPLATE.USER_BOOKINGS_EMPTY),
         },
         selector=F['bookings'].len() > 0
     ),
@@ -89,24 +79,25 @@ user_bookings_window = Window(
                 Format("{item[booking_details]}"),
                 id="booking_details"
             ),
-            Button(
-                Const(BTN_CANCEL_TEXT),
-                id="btn_cancel_{item[id]}",
-                on_click=flag_booking_for_cancel
+            Checkbox(
+                Const(BTN_TEXT.CANCELLED),
+                Const(BTN_TEXT.CANCEL),
+                id="btn_cancel",
+                on_state_changed=flag_booking_for_cancel
             ),
         ),
         id="user_bookings",
         items="bookings",
         item_id_getter=lambda item: item["id"]
     ),
-    CustomCancel(Const(BTN_FINISH_TEXT)),
+    CustomCancel(Const(BTN_TEXT.FINISH)),
     state=ViewBookingsDialogStates.VIEW_BOOKINGS,
     getter=fetch_user_bookings
 )
 
 async def on_dialog_close(result: Optional[Exception], dm: DialogManager):
     if isinstance(error := result, Exception):
-        await dm.event.message.answer(ERROR_CANCEL_BOOKING_TEXT)
+        await dm.event.message.answer(TEXT.ERROR_CANCEL_BOOKING)
         await send_error_report(dm.event.bot, dm.dialog_data, str(error))
         return
     
@@ -126,7 +117,7 @@ async def on_dialog_close(result: Optional[Exception], dm: DialogManager):
         return
     
     canceled_bookings_text = "\n".join(
-        CANCELLED_BOOKING_TEMPLATE.format(
+        TEMPLATE.CANCELLED_BOOKING.format(
             room=booking.room,
             date=booking.date,
             formatted_day_of_week=short_day_of_week(booking.date),
@@ -135,7 +126,7 @@ async def on_dialog_close(result: Optional[Exception], dm: DialogManager):
             user_full_name=booking.user_full_name,
         ) for booking in cancelled_bookings
     )
-    user_cancelled_bookings_text = SUCCESS_USER_CANCELLED_TEMPLATE.format(user=dm.event.from_user)
+    user_cancelled_bookings_text = TEMPLATE.USER_CANCELLED.format(user=dm.event.from_user)
     await dm.event.message.answer(
         "\n\n".join([user_cancelled_bookings_text, canceled_bookings_text])
     )
