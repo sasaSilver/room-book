@@ -14,9 +14,6 @@ from bot.settings import settings, bot_properties
 from bot.constants import BTN_TEXT, TEMPLATE
 from bot.utils import send_error_report
 
-bot = None
-# global because fuck you
-
 async def start(message: Message):
     await message.answer(
         TEMPLATE.REGISTERED_USER.format(user=message.from_user),
@@ -53,9 +50,9 @@ async def on_bot_chat_member_update(event: ChatMemberUpdated):
     )
     await message.delete()
 
-async def error_handler(event: ErrorEvent, dialog_manager: DialogManager, message: Message):
+async def error_handler(event: ErrorEvent, message: Message):
     error = event.exception
-    error_type = event.__class__.__name__
+    error_type = error.__class__.__name__
     logging.error(f"{error_type}: {event.exception}")
     kwargs = {
         "message": message,
@@ -68,6 +65,7 @@ async def error_handler(event: ErrorEvent, dialog_manager: DialogManager, messag
     else:
         kwargs["error"] = str(error)
     await send_error_report(**kwargs)
+    
 def setup_dp():
     dp = Dispatcher(storage=MemoryStorage())
     
