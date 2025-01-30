@@ -7,6 +7,9 @@ TIMESLOT_DURATION = 30  # in minutes
 START_TIME = datetime.time(7, 30)
 END_TIME = datetime.time(18, 30)
 
+class EMOJI(StrEnum):
+    TICK = "✅"
+
 class BTN_TEXT(StrEnum):
     """
     Button texts.

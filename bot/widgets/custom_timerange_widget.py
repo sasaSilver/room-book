@@ -135,7 +135,6 @@ class TimeRangeWidget(Keyboard):
             manager.dialog_data["start_time"] = endpoint_time_selected[0].isoformat()
             manager.dialog_data["end_time"] = endpoint_time_selected[1].isoformat()
 
-        keyboard_builder = InlineKeyboardBuilder()
         
         selected_date = manager.dialog_data["selected_date"]
         timeslots = self._get_filtered_timeslots(selected_date)
@@ -143,6 +142,7 @@ class TimeRangeWidget(Keyboard):
         if len(timeslots) == 1 and len(endpoint_time_selected) == 0:
             return []
         
+        keyboard_builder = InlineKeyboardBuilder()
         # Build keyboard buttons
         for timepoint in timeslots:
             time_callback_data = self._item_callback_data(timepoint.strftime("%H:%M"))

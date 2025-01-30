@@ -9,9 +9,9 @@ from aiogram.types import CallbackQuery
 from typing import Any, Dict, List, Optional
 
 import bot.database.db_crud as db_crud
-from bot.utils import create_timeslot_str, send_error_report, short_day_of_week
+from bot.utils import create_timeslot_str, short_day_of_week
 from bot.database.schemas.booking_schema import BookingSchema
-from bot.constants import TEXT, TEMPLATE, BTN_TEXT, FORMAT
+from bot.constants import TEMPLATE, BTN_TEXT, FORMAT
 from bot.widgets.custom_cancel_widget import CustomCancel
 
 class ViewBookingsDialogStates(StatesGroup):
@@ -26,7 +26,8 @@ def format_booking(booking: BookingSchema) -> Dict[str, str]:
         "id": booking.id,
         "room": booking.room,
         "booking_details": (
-            f"{booking.date.strftime(FORMAT.DATE)}\n"
+            f"{booking.date.strftime(FORMAT.DATE)} "
+            f"({short_day_of_week(booking.date)}) "
             f"{booking.start_time.strftime(FORMAT.TIME)}-{booking.end_time.strftime(FORMAT.TIME)}"
         )
     }
@@ -65,26 +66,31 @@ user_bookings_window = Window(
         },
         selector=F['bookings'].len() > 0
     ),
-    
-    ListGroup(
-        Button(Format("{item[room]}"), id="booking_room"),
-        Button(Format("{item[booking_details]}"), id="booking_details"),
-        Checkbox(
-            Const(BTN_TEXT.CANCELLED),
-            Const(BTN_TEXT.CANCEL),
-            id="btn_cancel",
-            on_state_changed=flag_booking_for_cancel
+    ScrollingGroup(
+        ListGroup(
+            Button(Format("{item[room]}"), id="booking_room"),
+            Button(Format("{item[booking_details]}"), id="booking_details"),
+            Checkbox(
+                Const(BTN_TEXT.CANCELLED),
+                Const(BTN_TEXT.CANCEL),
+                id="btn_cancel",
+                on_state_changed=flag_booking_for_cancel
+            ),
+            id="user_bookings",
+            items="bookings",
+            item_id_getter=lambda item: item["id"]
         ),
-        id="user_bookings",
-        items="bookings",
-        item_id_getter=lambda item: item["id"]
+        id="scroll_user_bookings",
+        width=1,
+        height=3,
+        hide_on_single_page=True,
     ),
     CustomCancel(Const(BTN_TEXT.FINISH)),
     state=ViewBookingsDialogStates.VIEW_BOOKINGS,
     getter=fetch_user_bookings
 )
 
-async def on_dialog_close(result: Optional[Any], dm: DialogManager):
+async def cancel_selected_bookings(result: Optional[Any], dm: DialogManager):
     booking_ids_to_cancel = dm.dialog_data["bookings_to_cancel"]
     if len(booking_ids_to_cancel) == 0:
         return
@@ -113,5 +119,5 @@ async def on_dialog_close(result: Optional[Any], dm: DialogManager):
 view_bookings_dialog = Dialog(
     user_bookings_window,
     on_start=on_dialog_start,
-    on_close=on_dialog_close,
+    on_close=cancel_selected_bookings,
 )

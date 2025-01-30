@@ -1,25 +1,28 @@
-from aiogram import F
 from aiogram_dialog import Dialog, DialogManager, Window
 from aiogram_dialog.widgets.kbd import (
     Button, Row, Calendar, CalendarConfig, Group, Back
 )
 from aiogram_dialog.widgets.text import Const, Format, Case
+
 from aiogram.types import CallbackQuery, User
 from aiogram.fsm.state import State, StatesGroup
+from aiogram import F
 
 import datetime
+from typing import Optional
 
 from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.widgets.custom_timerange_widget import TimeRangeWidget
 from bot.utils import (
-    generate_timeslots, send_error_report, create_timeslot_str, short_day_of_week
+    generate_timeslots, create_timeslot_str, short_day_of_week
 )
 import bot.database.db_crud as db_crud
 from bot.database.schemas import BookingSchema
 from bot.constants import (
-    TEXT, TEMPLATE, BTN_TEXT,
+    EMOJI, TEXT, TEMPLATE, BTN_TEXT,
     AVAILABLE_ROOMS, START_TIME, END_TIME, TIMESLOT_DURATION
 )
+
 class BookingDialogStates(StatesGroup):
     SELECT_ROOM = State()
     SELECT_DATE = State()
@@ -58,6 +61,7 @@ async def create_booking(callback: CallbackQuery, _button: Button, dialog_manage
     await db_crud.create_booking(booking)
     
     await dialog_manager.done(result=booking)
+    await callback.answer(EMOJI.TICK)
     await callback.message.delete()
 
 async def clear_date_time_cache(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
@@ -94,7 +98,7 @@ async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
     daily_bookings = await db_crud.get_bookings_by_date_room(
         data["selected_date"], data["selected_room"]
     )
-        
+    
     partial_result["daily_bookings"] = daily_bookings
     dialog_manager.dialog_data["cached_bookings"] = daily_bookings
     # store fetched bookings as "cache" in dialog data to not refetch on window re-render
@@ -103,8 +107,8 @@ async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
 select_room_window = Window(
     Const(TEXT.SELECT_ROOM),
     Row(*[
-        Button(Const(room), id=f"btn_room", on_click=select_this_room)
-          for room in AVAILABLE_ROOMS
+        Button(Const(room), id=f"btn_room_{i}", on_click=select_this_room)
+          for i, room in enumerate(AVAILABLE_ROOMS)
     ]),
     CustomCancel(Const(BTN_TEXT.CANCEL)),
     state=BookingDialogStates.SELECT_ROOM
@@ -153,7 +157,11 @@ select_time_window = Window(
     getter=get_daily_bookings
 )
 
-async def on_dialog_close(booking: BookingSchema, dm: DialogManager):
+async def on_dialog_close(result: Optional[BookingSchema], dm: DialogManager):
+    if not isinstance(result, BookingSchema):
+        return
+    
+    booking = result
     timeslot_text = create_timeslot_str(booking.start_time, booking.end_time)
     await dm.event.message.answer(
         TEMPLATE.SUCCESS_BOOKING.format(

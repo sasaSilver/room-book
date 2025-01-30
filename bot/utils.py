@@ -1,6 +1,8 @@
 from aiogram import Bot
 from aiogram.types import BufferedInputFile, Message
 import datetime
+
+from aiogram_dialog import DialogManager
 from bot.settings import settings
 from bot.constants import TEXT
 
@@ -19,7 +21,7 @@ def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
     end_hm: str = end_time.strftime("%H:%M")
     return f"{start_hm} - {end_hm}"
 
-async def send_error_report(message: Message, bot: Bot, data: dict, error: str):
+async def send_error_report(message: Message, bot: Bot, data: dict, error_text: str, dialog_manager: DialogManager):
     god_id = settings.god_id
     bug_report = "\n".join([
         f"{data['error_type']}",
@@ -29,8 +31,9 @@ async def send_error_report(message: Message, bot: Bot, data: dict, error: str):
         f"Room: {data['selected_room']}" if data.get('selected_room', False) else "", 
         f"Date: {data['selected_date']}" if data.get('selected_date', False) else "",
         f"Time slot: {data['start_time']} - {data['end_time']}" if data.get('start_time', False) else "",
+        f"Dialog Manager: {dialog_manager}"
         f"Error:",
-        f"{error}"
+        f"{error_text}"
     ])
     timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")
     bug_report_bytes = bug_report.encode("utf-8")
