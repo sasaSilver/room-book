@@ -56,9 +56,6 @@ def short_day_of_week(date: datetime.date):
         "суббота": "Сб",
         "воскресенье": "Вс"
     }
-    
     day_name = date.strftime("%A")
-    
     abbreviated_day = day_abbreviations.get(day_name.lower(), day_name)
-    
     return abbreviated_day

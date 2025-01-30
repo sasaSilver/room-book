@@ -14,6 +14,9 @@ from bot.settings import settings, bot_properties
 from bot.constants import BTN_TEXT, TEMPLATE
 from bot.utils import send_error_report
 
+bot = None
+# global because fuck you
+
 async def start(message: Message):
     await message.answer(
         TEMPLATE.REGISTERED_USER.format(user=message.from_user),
@@ -50,7 +53,7 @@ async def on_bot_chat_member_update(event: ChatMemberUpdated):
     )
     await message.delete()
 
-async def error_handler(event: ErrorEvent, message: Message):
+async def error_handler(event: ErrorEvent, message: Message, bot: Bot):
     error = event.exception
     error_type = error.__class__.__name__
     logging.error(f"{error_type}: {event.exception}")
@@ -58,7 +61,7 @@ async def error_handler(event: ErrorEvent, message: Message):
         "message": message,
         "bot": bot,
         "data": {"error_type": error_type},
-        "error": ""
+        "error": None
     }
     if isinstance(error, ConnectionResetError):
         kwargs["error"] = f"Database not responding:\n{str(error)}"
@@ -73,7 +76,11 @@ def setup_dp():
     dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXT.CREATE_BOOKING]))
     dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXT.MY_BOOKINGS]))
     dp.my_chat_member.register(on_bot_chat_member_update)
-    dp.errors.register(error_handler, F.update.message.as_("message"))
+    dp.errors.register(
+        error_handler,
+        F.update.message.as_("message"),
+        F.update.bot.as_("bot")
+    )
     dp.include_router(booking_dialog)
     dp.include_router(view_bookings_dialog)
     setup_dialogs(dp)
