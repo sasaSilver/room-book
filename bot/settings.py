@@ -1,3 +1,5 @@
+from aiogram.client.bot import DefaultBotProperties
+from aiogram.enums.parse_mode import ParseMode
 from dataclasses import dataclass
 from pathlib import Path
 from dotenv import load_dotenv
@@ -15,3 +17,9 @@ class BotSettings:
     god_id: int = int(os.getenv("GOD_ID"))
 
 settings: BotSettings = BotSettings()
+
+bot_properties = DefaultBotProperties(
+    parse_mode=ParseMode.HTML,
+    link_preview_is_disabled=True,
+    disable_notification=True,
+)

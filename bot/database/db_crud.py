@@ -74,4 +74,4 @@ async def _get_all_bookings(session: AsyncSession) -> List[BookingSchema]:
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(get_bookings_by_date_room(datetime.date.today(), "1"))
+    print(asyncio.run(get_bookings_by_username("ob0china")))

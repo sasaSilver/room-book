@@ -1,5 +1,5 @@
 from aiogram_dialog import Dialog, DialogManager, Window, SubManager
-from aiogram_dialog.widgets.kbd import ListGroup, Row, Button, Checkbox, ManagedCheckbox
+from aiogram_dialog.widgets.kbd import ListGroup, Row, Button, Checkbox, ManagedCheckbox, ScrollingGroup
 from aiogram_dialog.widgets.text import Const, Format, Case
 
 from aiogram import F
@@ -69,22 +69,15 @@ user_bookings_window = Window(
         },
         selector=F['bookings'].len() > 0
     ),
+    
     ListGroup(
-        Row(
-            Button(
-                Format("{item[room]}"),
-                id="booking_room"
-            ),
-            Button(
-                Format("{item[booking_details]}"),
-                id="booking_details"
-            ),
-            Checkbox(
-                Const(BTN_TEXT.CANCELLED),
-                Const(BTN_TEXT.CANCEL),
-                id="btn_cancel",
-                on_state_changed=flag_booking_for_cancel
-            ),
+        Button(Format("{item[room]}"), id="booking_room"),
+        Button(Format("{item[booking_details]}"), id="booking_details"),
+        Checkbox(
+            Const(BTN_TEXT.CANCELLED),
+            Const(BTN_TEXT.CANCEL),
+            id="btn_cancel",
+            on_state_changed=flag_booking_for_cancel
         ),
         id="user_bookings",
         items="bookings",
