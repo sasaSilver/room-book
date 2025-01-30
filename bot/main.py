@@ -18,7 +18,6 @@ bot = None
 # global because fuck you
 
 async def start(message: Message):
-    raise Exception("Test error")
     await message.answer(
         TEMPLATE.REGISTERED_USER.format(user=message.from_user),
         reply_markup=main_rkeyboard()
@@ -76,8 +75,7 @@ def setup_dp():
     dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXT.CREATE_BOOKING]))
     dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXT.MY_BOOKINGS]))
     dp.my_chat_member.register(on_bot_chat_member_update)
-    dp.errors.register(error_handler)
-    
+    dp.errors.register(error_handler, F.update.message.as_("message"))
     dp.include_router(booking_dialog)
     dp.include_router(view_bookings_dialog)
     setup_dialogs(dp)

@@ -2,7 +2,8 @@ from aiogram import Bot
 from aiogram.types import BufferedInputFile, Message
 import datetime
 from bot.settings import settings
-    
+from bot.constants import TEXT
+
 def generate_timeslots(start_time: datetime.time, end_time: datetime.time, interval: int) -> list[datetime.time]:
     timeslots = []
     current_time = start_time
@@ -42,7 +43,7 @@ async def send_error_report(message: Message, bot: Bot, data: dict, error: str):
         document=bug_report_file,
     )
     await message.answer(
-        
+        TEXT.ERROR_BOT
     )
 
 def short_day_of_week(date: datetime.date):
