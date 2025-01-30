@@ -103,10 +103,10 @@ async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
 
 select_room_window = Window(
     Const(TEXT.SELECT_ROOM),
-    Row(*[
+    *[
         Button(Const(room), id=f"btn_room_{i}", on_click=select_this_room)
           for i, room in enumerate(AVAILABLE_ROOMS)
-    ]),
+    ],
     CustomCancel(Const(BTN_TEXT.CANCEL)),
     state=BookingDialogStates.SELECT_ROOM
 )
