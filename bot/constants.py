@@ -5,7 +5,7 @@ from enum import StrEnum
 AVAILABLE_ROOMS = ["Аудитория А", "Аудитория В", "Аудитория С"]
 TIMESLOT_DURATION = 30  # in minutes
 START_TIME = datetime.time(7, 30)
-END_TIME = datetime.time(18, 30)
+END_TIME = datetime.time(15, 0)
 
 class EMOJI(StrEnum):
     TICK = "✅"
@@ -35,8 +35,10 @@ class TEMPLATE(StrEnum):
     Dynamic texts. To be used with .format() method.
     """
     SELECT_DATE = "Выберите дату брони для <b>{selected_room}</b>:"
-    SELECT_TIME = "Выберите время начала и конца брони <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>:"
     SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>."
+    SELECT_START_TIME = "Выберите время начала брони <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>:"
+    SELECT_END_TIME = SELECT_START_TIME.replace("начала", "конца")
+    SELECTED_BOTH = "Подтвердите бронь: <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week}), {timeslot}</b>"
     SUCCESS_BOOKING = (
         "✅ <b>{room} на {date:%d.%m} ({formatted_day_of_week}), {timeslot} "
         "была забронирована <a href='https://t.me/{username}'>{user_full_name}</a></b>."

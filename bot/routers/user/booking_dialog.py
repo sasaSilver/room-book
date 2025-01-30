@@ -10,6 +10,7 @@ from aiogram import F
 
 import datetime
 from typing import Optional
+from enum import Enum
 
 from bot.widgets.custom_cancel_widget import CustomCancel
 from bot.widgets.custom_timerange_widget import TimeRangeWidget
@@ -76,16 +77,24 @@ async def get_selected_room(dialog_manager: DialogManager, **_kwargs):
 
 async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
-    
     now = datetime.datetime.now()
+    selected_timepoints = dialog_manager.find("time_selection").get_widget_data(dialog_manager, [])
+    
     has_timeslots = now < datetime.datetime.combine(data["selected_date"], END_TIME)
+    has_start_time = len(selected_timepoints) > 0
+    has_end_time = len(selected_timepoints) > 1
+    
+    time_selection_state = SelectTimeStates(has_timeslots + has_start_time + has_end_time)
+    
+    timeslot_text = create_timeslot_str(selected_timepoints[0], selected_timepoints[1]) if has_end_time else None
     
     partial_result = {
         "selected_date": data["selected_date"],
         "formatted_day_of_week": short_day_of_week(data["selected_date"]),
         "selected_room": data["selected_room"],
-        "has_timeslots": has_timeslots,
+        "time_selection_state": time_selection_state,
         "daily_bookings": None,
+        "timeslot": timeslot_text
     }
     
     if "cached_bookings" in data:
@@ -131,13 +140,21 @@ time_selection_widget = TimeRangeWidget(
     id="time_selection"
 )
 
+class SelectTimeStates(Enum):
+    NO_TIMESLOTS = 0
+    HAS_TIMESLOTS = 1
+    HAS_START_TIME = 2
+    HAS_END_TIME = 3
+    
 select_time_window = Window(
     Case(
         {
-            0: Format(TEMPLATE.SELECT_TIME_EMPTY),
-            1: Format(TEMPLATE.SELECT_TIME),
+            SelectTimeStates.NO_TIMESLOTS: Format(TEMPLATE.SELECT_TIME_EMPTY),
+            SelectTimeStates.HAS_TIMESLOTS: Format(TEMPLATE.SELECT_START_TIME),
+            SelectTimeStates.HAS_START_TIME: Format(TEMPLATE.SELECT_END_TIME),
+            SelectTimeStates.HAS_END_TIME: Format(TEMPLATE.SELECTED_BOTH)
         },
-        selector="has_timeslots"
+        selector="time_selection_state"
     ),
     Group(time_selection_widget, width=4),
     Row(

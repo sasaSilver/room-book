@@ -16,7 +16,9 @@ def generate_timeslots(start_time: datetime.time, end_time: datetime.time, inter
         ).time()
     return timeslots  
 
-def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
+def create_timeslot_str(start_time: datetime.time | str, end_time: datetime.time | str):
+    if isinstance(start_time, str) and isinstance(end_time, str):
+        start_time, end_time = map(datetime.time.fromisoformat, (start_time, end_time))
     start_hm: str = start_time.strftime("%H:%M")
     end_hm: str = end_time.strftime("%H:%M")
     return f"{start_hm} - {end_hm}"

@@ -194,13 +194,9 @@ class TimeRangeWidget(Keyboard):
         manager: DialogManager,
     ) -> bool:
         
-        widget_data = self.get_widget_data(manager, [])
-
         if data == "None":
-            if widget_data:
-                self.set_widget_data(manager, [])
-                return True
             return False
+        
         clicked_timepoint = data
         
         endpoint_timepoints = self.get_widget_data(manager, [])
