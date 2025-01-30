@@ -1,36 +1,26 @@
 import asyncio, logging, locale
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import ExceptionTypeFilter
-from aiogram.types import Message, ChatMemberUpdated, User
+from aiogram.types import Message, ChatMemberUpdated, User, ErrorEvent
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
+from aiogram_dialog.api.exceptions import DialogsError
 
 from bot.kbd import get_main_rkeyboard as main_rkeyboard
 from bot.routers.user.booking_dialog import booking_dialog, BookingDialogStates
 from bot.routers.user.view_bookings_dialog import view_bookings_dialog, ViewBookingsDialogStates
 from bot.settings import settings, bot_properties
 from bot.constants import BTN_TEXT, TEMPLATE
+from bot.utils import send_error_report
 
-def setup_dp():
-    dp = Dispatcher(storage=MemoryStorage())
-    dp.message.register(start, F.text == "/start")
-    dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXT.CREATE_BOOKING]))
-    dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXT.MY_BOOKINGS]))
-    dp.my_chat_member.register(on_bot_chat_member_update)
-    #dp.errors.register(
-    #    error_handler,
-    #    ExceptionTypeFilter()
-    #)
-    dp.include_router(booking_dialog)
-    dp.include_router(view_bookings_dialog)
-    setup_dialogs(dp)
-    return dp
+bot = None
+# global because fuck you
 
 async def start(message: Message):
-    user: User = message.from_user
+    raise Exception("Test error")
     await message.answer(
-        TEMPLATE.REGISTERED_USER.format(user=user),
+        TEMPLATE.REGISTERED_USER.format(user=message.from_user),
         reply_markup=main_rkeyboard()
     )
 
@@ -64,6 +54,36 @@ async def on_bot_chat_member_update(event: ChatMemberUpdated):
     )
     await message.delete()
 
+async def error_handler(event: ErrorEvent, dialog_manager: DialogManager, message: Message):
+    error = event.exception
+    error_type = event.__class__.__name__
+    logging.error(f"{error_type}: {event.exception}")
+    kwargs = {
+        "message": message,
+        "bot": bot,
+        "data": {"error_type": error_type},
+        "error": ""
+    }
+    if isinstance(error, ConnectionResetError):
+        kwargs["error"] = f"Database not responding:\n{str(error)}"
+    else:
+        kwargs["error"] = str(error)
+    await send_error_report(**kwargs)
+def setup_dp():
+    dp = Dispatcher(storage=MemoryStorage())
+    
+    dp.message.register(start, F.text == "/start")
+    dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXT.CREATE_BOOKING]))
+    dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXT.MY_BOOKINGS]))
+    dp.my_chat_member.register(on_bot_chat_member_update)
+    dp.errors.register(error_handler)
+    
+    dp.include_router(booking_dialog)
+    dp.include_router(view_bookings_dialog)
+    setup_dialogs(dp)
+    
+    return dp
+    
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     locale.setlocale(locale.LC_ALL, '')

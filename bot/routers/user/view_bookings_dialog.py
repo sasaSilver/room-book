@@ -6,7 +6,7 @@ from aiogram import F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import bot.database.db_crud as db_crud
 from bot.utils import create_timeslot_str, send_error_report, short_day_of_week
@@ -40,11 +40,7 @@ async def fetch_user_bookings(**kwargs):
             "bookings": dm.dialog_data["cached_bookings"]
         }
     
-    try:
-       user_bookings = await db_crud.get_bookings_by_username(dm.dialog_data["user"].username)
-    except Exception as e:
-        dm.dialog_data["error_type"] = "Fetch bookings"
-        await dm.done(result=e)
+    user_bookings = await db_crud.get_bookings_by_username(dm.dialog_data["user"].username)
         
     formatted_bookings = [format_booking(booking) for booking in user_bookings]
     dm.dialog_data["cached_bookings"] = formatted_bookings
@@ -88,26 +84,16 @@ user_bookings_window = Window(
     getter=fetch_user_bookings
 )
 
-async def on_dialog_close(result: Optional[Exception], dm: DialogManager):
-    if isinstance(error := result, Exception):
-        await dm.event.message.answer(TEXT.ERROR_CANCEL_BOOKING)
-        await send_error_report(dm.event.bot, dm.dialog_data, str(error))
-        return
-    
-    bookings_to_cancel = dm.dialog_data["bookings_to_cancel"]
-    if len(bookings_to_cancel) == 0:
+async def on_dialog_close(result: Optional[Any], dm: DialogManager):
+    booking_ids_to_cancel = dm.dialog_data["bookings_to_cancel"]
+    if len(booking_ids_to_cancel) == 0:
         return
     
     cancelled_bookings: List[BookingSchema] = []
-    try:
-        for booking_id in bookings_to_cancel:
-            booking = await db_crud.get_booking_by_id(booking_id)
-            cancelled_bookings.append(booking)
-            await db_crud.delete_booking_by_id(booking_id)
-    except Exception as e:
-        dm.dialog_data["error_type"] = "Cancel booking"
-        await send_error_report(dm.event.bot, dm.dialog_data, str(error))
-        return
+    for booking_id in booking_ids_to_cancel:
+        booking = await db_crud.get_booking_by_id(booking_id)
+        cancelled_bookings.append(booking)
+        await db_crud.delete_booking_by_id(booking_id)
     
     canceled_bookings_text = "\n".join(
         TEMPLATE.CANCELLED_BOOKING.format(

@@ -1,5 +1,5 @@
 from aiogram import Bot
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, Message
 import datetime
 from bot.settings import settings
     
@@ -18,7 +18,7 @@ def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
     end_hm: str = end_time.strftime("%H:%M")
     return f"{start_hm} - {end_hm}"
 
-async def send_error_report(bot: Bot, data: dict, error: str):
+async def send_error_report(message: Message, bot: Bot, data: dict, error: str):
     god_id = settings.god_id
     bug_report = (
         f"{data['error_type']} Error\n"
@@ -40,6 +40,9 @@ async def send_error_report(bot: Bot, data: dict, error: str):
     await bot.send_document(
         chat_id=god_id,
         document=bug_report_file,
+    )
+    await message.answer(
+        
     )
 
 def short_day_of_week(date: datetime.date):

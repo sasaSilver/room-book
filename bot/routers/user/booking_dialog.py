@@ -55,10 +55,7 @@ async def create_booking(callback: CallbackQuery, _button: Button, dialog_manage
         end_time=datetime.time.fromisoformat(data["end_time"])
     )
     
-    try:
-        await db_crud.create_booking(booking)
-    except Exception as e:
-        await dialog_manager.done(result=e)
+    await db_crud.create_booking(booking)
     
     await dialog_manager.done(result=booking)
     await callback.message.delete()
@@ -94,13 +91,9 @@ async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
         partial_result["daily_bookings"] = data["cached_bookings"]
         return partial_result
     
-    try:
-        daily_bookings = await db_crud.get_bookings_by_date_room(
-            data["selected_date"], data["selected_room"]
-        )
-        print("FETCHED BOOKINGS")
-    except Exception as e:
-        await dialog_manager.done(result=e)
+    daily_bookings = await db_crud.get_bookings_by_date_room(
+        data["selected_date"], data["selected_room"]
+    )
         
     partial_result["daily_bookings"] = daily_bookings
     dialog_manager.dialog_data["cached_bookings"] = daily_bookings
@@ -160,23 +153,18 @@ select_time_window = Window(
     getter=get_daily_bookings
 )
 
-async def on_dialog_close(result: BookingSchema | Exception, dm: DialogManager):
-    if isinstance(error := result, Exception):
-        await dm.event.message.answer(TEXT.ERROR_BOOKING)
-        dm.dialog_data["error_type"] = "Booking"
-        await send_error_report(dm.event.bot, dm.dialog_data, str(error))
-    elif isinstance(booking := result, BookingSchema):
-        timeslot_text = create_timeslot_str(booking.start_time, booking.end_time)
-        await dm.event.message.answer(
-            TEMPLATE.SUCCESS_BOOKING.format(
-                room=booking.room,
-                date=booking.date,
-                formatted_day_of_week=short_day_of_week(booking.date),
-                timeslot=timeslot_text,
-                username=booking.username,
-                user_full_name=booking.user_full_name
-            )
+async def on_dialog_close(booking: BookingSchema, dm: DialogManager):
+    timeslot_text = create_timeslot_str(booking.start_time, booking.end_time)
+    await dm.event.message.answer(
+        TEMPLATE.SUCCESS_BOOKING.format(
+            room=booking.room,
+            date=booking.date,
+            formatted_day_of_week=short_day_of_week(booking.date),
+            timeslot=timeslot_text,
+            username=booking.username,
+            user_full_name=booking.user_full_name
         )
+    )
 
 booking_dialog = Dialog(
     select_room_window,
