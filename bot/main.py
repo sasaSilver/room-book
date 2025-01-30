@@ -89,7 +89,7 @@ def setup_dp():
     
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    locale.setlocale(locale.LC_ALL, '')
+    locale.setlocale(locale.LC_ALL, '') # for local date and time formatting, 'LC_ALL' just in case
 
     bot = Bot(token=settings.token, default=bot_properties)
     dp = setup_dp()

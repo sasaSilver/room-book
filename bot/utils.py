@@ -21,22 +21,22 @@ def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
 
 async def send_error_report(message: Message, bot: Bot, data: dict, error: str):
     god_id = settings.god_id
-    bug_report = (
-        f"{data['error_type']} Error\n"
-        f"============\n"
-        f"Time: {datetime.datetime.now()}\n"
-        f"User: {data['user'].username} {data['user'].full_name}, ID: {data['user'].id})\n"
-        f"Room: {data['selected_room']}\n" if data.get("selected_room", False) else ""
-        f"Date: {data['selected_date']}\n" if data.get("selected_date", False) else ""
-        f"Time slot: {data['start_time']} - {data['end_time']}\n" if data.get("start_time", False) and data.get("end_time", False) else ""
-        f"Error:\n"
+    bug_report = "\n".join([
+        f"{data['error_type']}",
+        f"=================",
+        f"Time: {datetime.datetime.now()}",
+        f"User: {data['user'].username} {data['user'].full_name}, ID: {data['user'].id})" if data.get('user', False) else "",
+        f"Room: {data['selected_room']}" if data.get('selected_room', False) else "", 
+        f"Date: {data['selected_date']}" if data.get('selected_date', False) else "",
+        f"Time slot: {data['start_time']} - {data['end_time']}" if data.get('start_time', False) else "",
+        f"Error:",
         f"{error}"
-    )
+    ])
     timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")
-    bug_report_bytes = bug_report.encode('utf-8')
+    bug_report_bytes = bug_report.encode("utf-8")
     bug_report_file = BufferedInputFile(
         file=bug_report_bytes,
-        filename=f"bug_report_{timestamp}.txt"
+        filename=f"error_report_{timestamp}.txt"
     )
     await bot.send_document(
         chat_id=god_id,
