@@ -28,9 +28,6 @@ class BookingDialogStates(StatesGroup):
     SELECT_DATE = State()
     SELECT_BOOKING_TIME = State()
     
-async def fetch_user(_callback: CallbackQuery, dialog_manager: DialogManager):
-    dialog_manager.dialog_data["user"] = dialog_manager.start_data["user"]
-    
 async def select_this_room(_callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data["selected_room"] = button.text.text
     await dialog_manager.switch_to(BookingDialogStates.SELECT_DATE)
@@ -47,7 +44,7 @@ async def select_chosen_date(
 
 async def create_booking(callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):         
     data = dialog_manager.dialog_data
-    user: User = data["user"]
+    user: User = dialog_manager.event.from_user
     
     booking = BookingSchema(
         username=user.username,
@@ -178,6 +175,5 @@ booking_dialog = Dialog(
     select_room_window,
     select_date_window,
     select_time_window,
-    on_start=fetch_user,
     on_close=on_dialog_close,
 )

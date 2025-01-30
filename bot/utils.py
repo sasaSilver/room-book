@@ -22,16 +22,11 @@ def create_timeslot_str(start_time: datetime.time, end_time: datetime.time):
     return f"{start_hm} - {end_hm}"
 
 async def send_error_report(message: Message, bot: Bot, data: dict, error_text: str, dialog_manager: DialogManager):
-    god_id = settings.god_id
     bug_report = "\n".join([
         f"{data['error_type']}",
         f"=================",
         f"Time: {datetime.datetime.now()}",
-        f"User: {data['user'].username} {data['user'].full_name}, ID: {data['user'].id})" if data.get('user', False) else "",
-        f"Room: {data['selected_room']}" if data.get('selected_room', False) else "", 
-        f"Date: {data['selected_date']}" if data.get('selected_date', False) else "",
-        f"Time slot: {data['start_time']} - {data['end_time']}" if data.get('start_time', False) else "",
-        f"Dialog Manager: {dialog_manager}"
+        f"Dialog Manager: {dialog_manager.__dict__}",
         f"Error:",
         f"{error_text}"
     ])
@@ -42,7 +37,7 @@ async def send_error_report(message: Message, bot: Bot, data: dict, error_text: 
         filename=f"error_report_{timestamp}.txt"
     )
     await bot.send_document(
-        chat_id=god_id,
+        chat_id=settings.god_id,
         document=bug_report_file,
     )
     await message.answer(
