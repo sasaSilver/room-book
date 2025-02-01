@@ -1,28 +1,23 @@
-import datetime
 from enum import StrEnum
+from bot.settings import settings
 
-# Booking essentials
-AVAILABLE_ROOMS = ["Аудитория А", "Аудитория В", "Аудитория С"]
-TIMESLOT_DURATION = 30  # in minutes
-START_TIME = datetime.time(7, 30)
-END_TIME = datetime.time(15, 0)
-
-class EMOJI(StrEnum):
+class EMOJIS(StrEnum):
     TICK = "✅"
 
-class BTN_TEXT(StrEnum):
+class BTN_TEXTS(StrEnum):
     """
     Button texts.
     """
     CREATE_BOOKING = "📅 Создать бронь"
     MY_BOOKINGS = "📋 Мои бронирования"
     CANCEL = "❌ Отменить"
-    CANCELLED = "🟢 Не отменять"
     BACK = "⬅️ Назад"
     FINISH = "✅ Завершить"
+    CANCEL_BOOKING = "🔴 Отменить бронь"
+    CANCELLED = "🟢 Не отменять"
 
 
-class TEXT(StrEnum):
+class TEXTS(StrEnum):
     """
     Static texts.
     """
@@ -30,41 +25,41 @@ class TEXT(StrEnum):
     SELECT_ROOM = "Выберите аудиторию:"
 
 
-class TEMPLATE(StrEnum):
+class TEMPLATES(StrEnum):
     """
     Dynamic texts. To be used with .format() method.
     """
-    SELECT_DATE = "Выберите дату брони для <b>{selected_room}</b>:"
-    SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>."
-    SELECT_START_TIME = "Выберите время начала брони <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week})</b>:"
+    SELECT_DATE = "Выберите дату брони для <b>{room}</b>:"
+    SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{room}</b> на <b>{date:%d.%m} ({day_of_week})</b>."
+    SELECT_START_TIME = "Выберите время начала брони <b>{room}</b> на <b>{date:%d.%m} ({day_of_week})</b>:"
     SELECT_END_TIME = SELECT_START_TIME.replace("начала", "конца")
-    SELECTED_BOTH = "Подтвердите бронь: <b>{selected_room}</b> на <b>{selected_date:%d.%m} ({formatted_day_of_week}), {timeslot}</b>"
-    SUCCESS_BOOKING = (
-        "✅ <b>{room} на {date:%d.%m} ({formatted_day_of_week}), {timeslot} "
-        "была забронирована <a href='https://t.me/{username}'>{user_full_name}</a></b>."
-    )
+    CONFIRM_BOOKING = "Подтвердите бронь: <b>{room}</b> на <b>{date:%d.%m} ({day_of_week}), {timeslot}</b>"
     USER_LINK = "<a href='https://t.me/{user.username}'>{user.full_name}</a>"
+    SUCCESS_BOOKING = (
+        "✅ <b>{room} на {date:%d.%m} ({day_of_week}), {timeslot} "
+        "была забронирована " + USER_LINK + "</b>."
+    )
     USER_BOOKINGS = "Бронирования пользователя " + USER_LINK + ":"
     USER_BOOKINGS_EMPTY = "У пользователя " + USER_LINK + " нет бронирований."
     USER_CANCELED_BOOKINGS = "Пользоывтель " + USER_LINK + " отменил свои бронирования:"
     USER_CANCELLED = "✅ Пользователь " + USER_LINK + " отменил:"
     CANCELLED_BOOKING = (
-        "<b>{room} на {date:%d.%m} ({formatted_day_of_week}), {timeslot}.</b>"
+        "<b>{room} на {date:%d.%m} ({day_of_week}), {timeslot}.</b>"
     )
     REGISTERED_USER = (
-        "Пользователь <a href='https://t.me/{user.username}'>{user.full_name}</a> зарегистрирован.\n"
+        "Пользователь " + USER_LINK + " зарегистрирован.\n"
         "<i>Не удаляйте это сообщение.</i>"
     )
 
 
-class FORMAT(StrEnum):
+class FORMATS(StrEnum):
     """
     Formats (for date and time).
     """
     DATE = "%d.%m"
     TIME = "%H:%M"
     
-class HELP_TEXT(StrEnum):
+class HELP_TEXTS(StrEnum):
     """
     Static texts from help dialog.
     """
@@ -75,6 +70,7 @@ class HELP_TEXT(StrEnum):
     HOW2_VIEW = "Как посмотреть свои брони?"
     HOW2_VIEW_ALL = "Как просмотреть все брони?"
     HOW2_CANCEL = "Как отменить свою бронь?"
+    WHY_BOT_DOWN = "Почему не видно бронирования?"
     MENU = f"<b>{HOW2_MENU}</b>\n\n" + (
         "Меню находится под полем ввода текста телеграма.\n\n"
         "Если его не видно, в поле ввода нажмите на самую правую квадратную иконку.\n\n"
@@ -98,4 +94,8 @@ class HELP_TEXT(StrEnum):
         "1. Просмотрите свои брони.\n\n"
         "2. Кнопка отмены на странице с бронью позволяет выбрать, отменить или не отменять текущую бронь. "
         "Если была выбрана отмена, после нажатия кнопки <i>\"Завершить\"</i> бронь отменится."
+    )
+    BOT_DOWN = f"<b>{WHY_BOT_DOWN}</b>\n\n" + (
+        "Некоторые запросы могут долго обрабатываться. Если бот вообще не отвечает на некоторые сообщения, "
+        f"сообщите <a href='https://t.me/{settings.adm_username}'>администратору</a>."
     )

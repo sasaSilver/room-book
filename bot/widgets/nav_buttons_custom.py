@@ -5,7 +5,7 @@ from aiogram_dialog.widgets.kbd.state import EventProcessorButton
 from aiogram.types import CallbackQuery
 from aiogram.fsm.state import State
     
-class SwitchToSavePrevious(SwitchTo):
+class SwitchToCustom(SwitchTo):
     """
     Works like a regular SwitchTo, but stores the "switching history" in dialog data.\n
     To be used in par with PreserveHistoryBack.
@@ -33,7 +33,7 @@ class SwitchToSavePrevious(SwitchTo):
         return add_state_to_stack
 
 
-class Previous(EventProcessorButton):
+class BackCustom(EventProcessorButton):
     """
     Goes to a previous state is dialog's state stack.\n
     To be used in par with PreserveHistorySwitchTo.

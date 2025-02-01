@@ -3,7 +3,7 @@ from aiogram_dialog.widgets.kbd import Cancel
 from aiogram_dialog.widgets.text import Const
 from aiogram.types import CallbackQuery
 
-class CustomCancel(Cancel):
+class CancelCustom(Cancel):
     """
     Acts as a regular cancel button, but deletes the previous message as well.
     """

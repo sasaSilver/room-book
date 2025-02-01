@@ -1,39 +1,36 @@
 from aiogram_dialog import Dialog, DialogManager, Window
+from aiogram_dialog.widgets.text import Const, Format, Case
 from aiogram_dialog.widgets.kbd import (
     Button, Row, Calendar, CalendarConfig, Group, Back
 )
-from aiogram_dialog.widgets.text import Const, Format, Case
 
 from aiogram.types import CallbackQuery, User
 from aiogram.fsm.state import State, StatesGroup
 from aiogram import F
 
 import datetime
-from typing import Optional
-from enum import Enum
 
-from bot.widgets.custom_cancel_widget import CustomCancel
-from bot.widgets.custom_timerange_widget import TimeRangeWidget
-from bot.utils import (
-    generate_timeslots, create_timeslot_str, short_day_of_week
-)
+from bot import settings
+from bot.widgets import TimeRangeCustom, CancelCustom 
 import bot.database.db_crud as db_crud
 from bot.database.schemas import BookingSchema
-from bot.constants import (
-    EMOJI, TEXT, TEMPLATE, BTN_TEXT,
-    AVAILABLE_ROOMS, START_TIME, END_TIME, TIMESLOT_DURATION
+from bot.utils import (
+    generate_timeslots, create_timeslot_str,
+    short_day_of_week, get_timeslot_text,
+    get_time_selection_state, TimeWindowState
 )
+from bot.texts import EMOJIS, TEXTS, TEMPLATES, BTN_TEXTS
 
 class BookingDialogStates(StatesGroup):
     SELECT_ROOM = State()
     SELECT_DATE = State()
     SELECT_BOOKING_TIME = State()
     
-async def select_this_room(_callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+async def select_room(_callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data["selected_room"] = button.text.text
     await dialog_manager.switch_to(BookingDialogStates.SELECT_DATE)
 
-async def select_chosen_date(
+async def select_date(
         callback: CallbackQuery,
         _calendar: Calendar,
         dialog_manager: DialogManager,
@@ -59,11 +56,11 @@ async def create_booking(callback: CallbackQuery, _button: Button, dialog_manage
     await db_crud.create_booking(booking)
     
     await dialog_manager.done(result=booking)
-    await callback.answer(EMOJI.TICK)
+    await callback.answer(EMOJIS.TICK)
     await callback.message.delete()
 
 async def clear_date_time_cache(_callback: CallbackQuery, _button: Button, dialog_manager: DialogManager):
-    time_selection_widget: TimeRangeWidget = dialog_manager.find("time_selection")
+    time_selection_widget: TimeRangeCustom = dialog_manager.find("time_selection")
     time_selection_widget.reset(dialog_manager)
     dialog_manager.dialog_data.pop("start_time", None)
     dialog_manager.dialog_data.pop("end_time", None)
@@ -72,29 +69,19 @@ async def clear_date_time_cache(_callback: CallbackQuery, _button: Button, dialo
 async def get_selected_room(dialog_manager: DialogManager, **_kwargs):
     room = dialog_manager.dialog_data["selected_room"]
     return {
-        "selected_room": room
+        "room": room
     }
 
-async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
+async def get_time_selection_data(dialog_manager: DialogManager, **_kwargs):
     data = dialog_manager.dialog_data
-    now = datetime.datetime.now()
-    selected_timepoints = dialog_manager.find("time_selection").get_widget_data(dialog_manager, [])
-    
-    has_timeslots = now < datetime.datetime.combine(data["selected_date"], END_TIME)
-    has_start_time = len(selected_timepoints) > 0
-    has_end_time = len(selected_timepoints) > 1
-    
-    time_selection_state = SelectTimeStates(has_timeslots + has_start_time + has_end_time)
-    
-    timeslot_text = create_timeslot_str(selected_timepoints[0], selected_timepoints[1]) if has_end_time else None
     
     partial_result = {
-        "selected_date": data["selected_date"],
-        "formatted_day_of_week": short_day_of_week(data["selected_date"]),
-        "selected_room": data["selected_room"],
-        "time_selection_state": time_selection_state,
-        "daily_bookings": None,
-        "timeslot": timeslot_text
+        "date": data["selected_date"],
+        "day_of_week": short_day_of_week(data["selected_date"]),
+        "room": data["selected_room"],
+        "time_selection_state": get_time_selection_state(dialog_manager),
+        "timeslot": get_timeslot_text(dialog_manager),
+        "daily_bookings": None
     }
     
     if "cached_bookings" in data:
@@ -111,80 +98,76 @@ async def get_daily_bookings(dialog_manager: DialogManager, **_kwargs):
     return partial_result
 
 select_room_window = Window(
-    Const(TEXT.SELECT_ROOM),
+    Const(TEXTS.SELECT_ROOM),
     *[
-        Button(Const(room), id=f"btn_room_{i}", on_click=select_this_room)
-          for i, room in enumerate(AVAILABLE_ROOMS)
+        Button(Const(room), id=f"btn_room_{i}", on_click=select_room)
+          for i, room in enumerate(settings.rooms)
     ],
-    CustomCancel(Const(BTN_TEXT.CANCEL)),
+    CancelCustom(Const(BTN_TEXTS.CANCEL)),
     state=BookingDialogStates.SELECT_ROOM
 )
 
 select_date_window = Window(
-    Format(TEMPLATE.SELECT_DATE),
+    Format(TEMPLATES.SELECT_DATE),
     Calendar(
         id="calendar",
-        on_click=select_chosen_date,
+        on_click=select_date,
         config=CalendarConfig(min_date=datetime.date.today()),
     ),
     Row(
-        Back(Const(BTN_TEXT.BACK)),
-        CustomCancel(Const(BTN_TEXT.CANCEL)),
+        Back(Const(BTN_TEXTS.BACK)),
+        CancelCustom(Const(BTN_TEXTS.CANCEL)),
     ),
     getter=get_selected_room,
     state=BookingDialogStates.SELECT_DATE,
 )
 
-time_selection_widget = TimeRangeWidget(
-    timepoints=generate_timeslots(START_TIME, END_TIME, TIMESLOT_DURATION),
-    id="time_selection"
-)
-
-class SelectTimeStates(Enum):
-    NO_TIMESLOTS = 0
-    HAS_TIMESLOTS = 1
-    HAS_START_TIME = 2
-    HAS_END_TIME = 3
-    
 select_time_window = Window(
     Case(
         {
-            SelectTimeStates.NO_TIMESLOTS: Format(TEMPLATE.SELECT_TIME_EMPTY),
-            SelectTimeStates.HAS_TIMESLOTS: Format(TEMPLATE.SELECT_START_TIME),
-            SelectTimeStates.HAS_START_TIME: Format(TEMPLATE.SELECT_END_TIME),
-            SelectTimeStates.HAS_END_TIME: Format(TEMPLATE.SELECTED_BOTH)
+            TimeWindowState.NO_TIMESLOTS: Format(TEMPLATES.SELECT_TIME_EMPTY),
+            TimeWindowState.HAS_TIMESLOTS: Format(TEMPLATES.SELECT_START_TIME),
+            TimeWindowState.SELECTED_START_TIME: Format(TEMPLATES.SELECT_END_TIME),
+            TimeWindowState.SELECTED_END_TIME: Format(TEMPLATES.CONFIRM_BOOKING)
         },
         selector="time_selection_state"
     ),
-    Group(time_selection_widget, width=4),
+    Group(
+        TimeRangeCustom(
+            timepoints=generate_timeslots(
+                settings.start_time, settings.end_time, settings.timeslot_duration
+            ),
+            id="time_selection"
+        ),
+        width=4
+    ),
     Row(
-        Back(Const(BTN_TEXT.BACK), on_click=clear_date_time_cache),
+        Back(Const(BTN_TEXTS.BACK), on_click=clear_date_time_cache),
         Button(
-            Const(BTN_TEXT.FINISH),
+            Const(BTN_TEXTS.FINISH),
             id="btn_time_selected",
             on_click=create_booking,
             when=F["dialog_data"]["start_time"] and F["dialog_data"]["end_time"]
         ),
     ),
-    CustomCancel(Const(BTN_TEXT.CANCEL)),
+    CancelCustom(Const(BTN_TEXTS.CANCEL)),
     state=BookingDialogStates.SELECT_BOOKING_TIME,
-    getter=get_daily_bookings
+    getter=get_time_selection_data
 )
 
-async def on_dialog_close(result: Optional[BookingSchema], dm: DialogManager):
-    if not isinstance(result, BookingSchema):
+async def send_booking_confirmation(result: BookingSchema | None, dm: DialogManager):
+    if result is None:
         return
     
     booking = result
     timeslot_text = create_timeslot_str(booking.start_time, booking.end_time)
     await dm.event.message.answer(
-        TEMPLATE.SUCCESS_BOOKING.format(
+        TEMPLATES.SUCCESS_BOOKING.format(
             room=booking.room,
             date=booking.date,
-            formatted_day_of_week=short_day_of_week(booking.date),
+            day_of_week=short_day_of_week(booking.date),
             timeslot=timeslot_text,
-            username=booking.username,
-            user_full_name=booking.user_full_name
+            user=dm.event.from_user
         )
     )
 
@@ -192,5 +175,5 @@ booking_dialog = Dialog(
     select_room_window,
     select_date_window,
     select_time_window,
-    on_close=on_dialog_close,
+    on_close=send_booking_confirmation,
 )

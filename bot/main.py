@@ -8,16 +8,16 @@ from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
 from aiogram_dialog.api.exceptions import DialogsError
 
 from bot.kbd import get_main_rkeyboard as main_rkeyboard
-from bot.routers.user.booking_dialog import booking_dialog, BookingDialogStates
-from bot.routers.user.view_bookings_dialog import view_bookings_dialog, ViewBookingsDialogStates
-from bot.routers.user.help_dialog import help_dialog, HelpDialogStates
-from bot.settings import settings, bot_properties
-from bot.constants import BTN_TEXT, TEMPLATE
+from bot.routers.user.create_booking import booking_dialog, BookingDialogStates
+from bot.routers.user.user_bookings import view_bookings_dialog, ViewBookingsDialogStates
+from bot.routers.user.help import help_dialog, HelpDialogStates
+from bot.settings import settings
+from bot.texts import BTN_TEXTS, TEMPLATES
 from bot.utils import send_error_report
 
 async def start(message: Message):
     await message.answer(
-        TEMPLATE.REGISTERED_USER.format(user=message.from_user),
+        TEMPLATES.REGISTERED_USER.format(user=message.from_user),
         reply_markup=main_rkeyboard()
     )
     await message.delete()
@@ -36,7 +36,6 @@ async def view_user_bookings(message: Message, dialog_manager: DialogManager):
         ViewBookingsDialogStates.VIEW_BOOKINGS,
         mode=StartMode.NEW_STACK,
         show_mode=ShowMode.EDIT,
-        data={"user": message.from_user}
     )
     await message.delete()
 
@@ -47,7 +46,7 @@ async def register_new_user(event: ChatMemberUpdated):
     user = event.from_user
     message = await bot.send_message(
         event.chat.id,
-        TEMPLATE.REGISTERED_USER.format(user=user),
+        TEMPLATES.REGISTERED_USER.format(user=user),
         reply_markup=main_rkeyboard()
     )
     await message.delete()
@@ -81,12 +80,13 @@ def setup_dp():
     dp = Dispatcher(storage=MemoryStorage())
     
     dp.message.register(start, F.text == "/start")
-    dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXT.CREATE_BOOKING]))
-    dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXT.MY_BOOKINGS]))
+    dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXTS.CREATE_BOOKING]))
+    dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXTS.MY_BOOKINGS]))
     dp.message.register(help_user, F.text.in_(["/help"]))
     dp.my_chat_member.register(register_new_user, F.update.bot.as_("bot"))
     dp.errors.register(
         error_handler,
+        ExceptionTypeFilter(Exception),
         F.update.message.as_("message"),
         F.update.bot.as_("bot")
     )
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     locale.setlocale(locale.LC_ALL, '') # for local date and time formatting, 'LC_ALL' just in case
 
-    bot = Bot(token=settings.token, default=bot_properties)
+    bot = Bot(token=settings.bot_token, default=settings.bot_properties)
     dp = setup_dp()
     
     asyncio.run(dp.start_polling(

@@ -20,9 +20,10 @@ class Booking(TypedDict):
     start_time: datetime.time
     end_time: datetime.time
 
-class TimeRangeWidget(Keyboard):
+class TimeRangeCustom(Keyboard):
     """
     Widget for time selection: 07:00, 07:30, 08:00, ...\n
+    Receives bookings for the day from dialog_data["daily_bookings"]\n
     Stores selected timepoints in widget_data.
     """
 
