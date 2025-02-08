@@ -4,7 +4,7 @@ from aiogram_dialog.api.internal import RawKeyboard
 
 from aiogram.types import InlineKeyboardButton
 
-class ScrollingGroupCustom(ScrollingGroup):
+class ScrollingGroupCircular(ScrollingGroup):
     async def _render_pager(
             self,
             pages: int,
@@ -17,6 +17,8 @@ class ScrollingGroupCustom(ScrollingGroup):
     
         last_page = pages - 1
         current_page = await self.get_page(manager)
+        
+        # Circular pagination
         next_page = (current_page + pages + 1) % pages
         prev_page = (current_page + pages - 1) % pages
     

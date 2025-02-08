@@ -6,6 +6,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os, datetime
 
+# looks ugly
+# idk what to do about it
 ENV_PATH = Path(__file__).resolve().parent.parent / '.env'
 
 load_dotenv(dotenv_path=ENV_PATH)

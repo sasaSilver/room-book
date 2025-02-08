@@ -12,11 +12,11 @@ import datetime
 
 from bot import settings
 from bot.widgets import TimeRangeCustom, CancelCustom 
-import bot.database.db_crud as db_crud
+import bot.database.db_op as db_op
 from bot.database.schemas import BookingSchema
-from bot.utils import (
+from bot.utils.utils import (
     generate_timeslots, create_timeslot_str,
-    short_day_of_week, get_timeslot_text,
+    get_timeslot_text,
     get_time_selection_state, TimeWindowState
 )
 from bot.texts import EMOJIS, TEXTS, TEMPLATES, BTN_TEXTS
@@ -53,7 +53,7 @@ async def create_booking(callback: CallbackQuery, _button: Button, dialog_manage
         end_time=datetime.time.fromisoformat(data["end_time"])
     )
     
-    await db_crud.create_booking(booking)
+    await db_op.create_booking(booking)
     
     await dialog_manager.done(result=booking)
     await callback.answer(EMOJIS.TICK)
@@ -77,18 +77,20 @@ async def get_time_selection_data(dialog_manager: DialogManager, **_kwargs):
     
     partial_result = {
         "date": data["selected_date"],
-        "day_of_week": short_day_of_week(data["selected_date"]),
+        "day_of_week": data["selected_date"].strftime("%a"),
         "room": data["selected_room"],
         "time_selection_state": get_time_selection_state(dialog_manager),
         "timeslot": get_timeslot_text(dialog_manager),
         "daily_bookings": None
     }
     
+    print(partial_result["time_selection_state"])
+    
     if "cached_bookings" in data:
         partial_result["daily_bookings"] = data["cached_bookings"]
         return partial_result
     
-    daily_bookings = await db_crud.get_bookings_by_date_room(
+    daily_bookings = await db_op.get_bookings_by_date_room(
         data["selected_date"], data["selected_room"]
     )
     
@@ -165,7 +167,7 @@ async def send_booking_confirmation(result: BookingSchema | None, dm: DialogMana
         TEMPLATES.SUCCESS_BOOKING.format(
             room=booking.room,
             date=booking.date,
-            day_of_week=short_day_of_week(booking.date),
+            day_of_week=booking.date.strftime("%a"),
             timeslot=timeslot_text,
             user=dm.event.from_user
         )

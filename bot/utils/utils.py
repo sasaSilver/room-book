@@ -1,13 +1,35 @@
 from aiogram import Bot
-from aiogram.types import BufferedInputFile, Message
-import datetime
-from enum import Enum
-
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InputFile, BufferedInputFile
 from aiogram_dialog import DialogManager
-from bot.settings import settings
-from bot.texts import TEXTS, settings
+from aiogram_dialog.manager.message_manager import MessageManager
+from aiogram_dialog.api.entities import MediaAttachment
 
-def generate_timeslots(start_time: datetime.time, end_time: datetime.time, interval: int) -> list[datetime.time]:
+from enum import Enum
+import datetime
+from typing import Union
+
+from bot.texts import BTN_TEXTS, settings
+from bot.settings import settings
+from bot.utils.booking_img_bytes import get_bookings_img_bytes
+
+def get_main_rkeyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=BTN_TEXTS.CREATE_BOOKING),
+                KeyboardButton(text=BTN_TEXTS.MY_BOOKINGS),
+                KeyboardButton(text=BTN_TEXTS.ALL_BOOKINGS)
+            ]
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+def generate_timeslots(
+        start_time: datetime.time,
+        end_time: datetime.time,
+        interval: int
+) -> list[datetime.time]:
     timeslots = []
     current_time = start_time
     while current_time <= end_time:
@@ -28,20 +50,6 @@ def create_timeslot_str(start_time: datetime.time | str, end_time: datetime.time
     end_hm: str = end_time.strftime("%H:%M")
     return f"{start_hm} - {end_hm}"
 
-def short_day_of_week(date: datetime.date):
-    day_abbreviations = {
-        "понедельник": "Пн",
-        "вторник": "Вт",
-        "среда": "Ср",
-        "четверг": "Чт",
-        "пятница": "Пт",
-        "суббота": "Сб",
-        "воскресенье": "Вс"
-    }
-    day_name = date.strftime("%A")
-    abbreviated_day = day_abbreviations.get(day_name.lower(), day_name)
-    return abbreviated_day
-
 def get_timeslot_text(dm: DialogManager):
     selected_times = dm.find("time_selection").get_widget_data(dm, [])
     if len(selected_times) < 2:
@@ -57,34 +65,22 @@ class TimeWindowState(Enum):
 def get_time_selection_state(dialog_manager: DialogManager):
     now = datetime.datetime.now()
     selected_timepoints = dialog_manager.find("time_selection").get_widget_data(dialog_manager, [])
-            
     has_timeslots = now < datetime.datetime.combine(
         dialog_manager.dialog_data["selected_date"], settings.end_time
-    )
+    ) - datetime.timedelta(minutes=30)
     has_start_time = len(selected_timepoints) > 0
     has_end_time = len(selected_timepoints) > 1
-    # each condition satisfied "bumps up" the state pf time selection window
+    # each condition satisfied "bumps up" the state of time selection window
     return TimeWindowState(has_timeslots + has_start_time + has_end_time)
 
-async def send_error_report(message: Message, bot: Bot, data: dict, error_text: str, dialog_manager: DialogManager):
-    bug_report = "\n".join([
-        f"{data['error_type']}",
-        f"=================",
-        f"Time: {datetime.datetime.now()}",
-        f"Dialog Manager: {dialog_manager.__dict__}",
-        f"Error:",
-        f"{error_text}"
-    ])
-    timestamp = datetime.datetime.now().strftime("%m%d_%H%M%S")
-    bug_report_bytes = bug_report.encode("utf-8")
-    bug_report_file = BufferedInputFile(
-        file=bug_report_bytes,
-        filename=f"error_report_{timestamp}.txt"
-    )
-    await bot.send_document(
-        chat_id=settings.adm_id,
-        document=bug_report_file,
-    )
-    await message.answer(
-        TEXTS.ERROR_BOT
-    )
+class MessageManagerMedia(MessageManager):
+    async def get_media_source(
+        self, media: MediaAttachment, bot: Bot,
+    ) -> Union[InputFile, str]:
+        URL_PREFIX = "my://"
+        if media.file_id:
+            return await super().get_media_source(media, bot)
+        if media.url and media.url.startswith(URL_PREFIX):
+            img_bytes = media.url[len(URL_PREFIX):]
+            return BufferedInputFile(img_bytes, f"schedule.png")
+        return await super().get_media_source(media, bot)

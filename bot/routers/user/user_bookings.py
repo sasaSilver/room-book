@@ -8,11 +8,11 @@ from aiogram.types import CallbackQuery
 
 from typing import Any, Dict, List, Optional
 
-from bot.utils import create_timeslot_str, short_day_of_week
+from bot.utils.utils import create_timeslot_str
 from bot.texts import TEMPLATES, BTN_TEXTS, FORMATS
-import bot.database.db_crud as db_crud
+import bot.database.db_op as db_op
 from bot.database.schemas.booking_schema import BookingSchema
-from bot.widgets import CancelCustom, ScrollingGroupCustom
+from bot.widgets import CancelCustom, ScrollingGroupCircular
 
 class ViewBookingsDialogStates(StatesGroup):
     VIEW_BOOKINGS = State()
@@ -26,7 +26,7 @@ def format_booking(booking: BookingSchema) -> Dict[str, str]:
         "room": booking.room,
         "booking_details": (
             f"{booking.date.strftime(FORMATS.DATE)} "
-            f"({short_day_of_week(booking.date)}) "
+            f"({booking.date.strftime("%a")}) "
             f"{booking.start_time.strftime(FORMATS.TIME)}-{booking.end_time.strftime(FORMATS.TIME)}"
         )
     }
@@ -40,7 +40,7 @@ async def fetch_user_bookings(**kwargs):
             "bookings": dm.dialog_data["cached_bookings"]
         }
     
-    user_bookings = await db_crud.get_bookings_by_username(dm.event.from_user.username)
+    user_bookings = await db_op.get_bookings_by_username(dm.event.from_user.username)
         
     formatted_bookings = [format_booking(booking) for booking in user_bookings]
     dm.dialog_data["cached_bookings"] = formatted_bookings
@@ -65,7 +65,7 @@ user_bookings_window = Window(
         },
         selector=F['bookings'].len() > 0
     ),
-    ScrollingGroupCustom(
+    ScrollingGroupCircular(
         ListGroup(
             Button(Format("{item[room]}"), id="booking_room"),
             Button(Format("{item[booking_details]}"), id="booking_details"),
@@ -96,15 +96,15 @@ async def cancel_selected_bookings(result: Optional[Any], dm: DialogManager):
     
     cancelled_bookings: List[BookingSchema] = []
     for booking_id in booking_ids_to_cancel:
-        booking = await db_crud.get_booking_by_id(booking_id)
+        booking = await db_op.get_booking_by_id(booking_id)
         cancelled_bookings.append(booking)
-        await db_crud.delete_booking_by_id(booking_id)
+        await db_op.delete_booking_by_id(booking_id)
     
     canceled_bookings_text = "\n".join(
         TEMPLATES.CANCELLED_BOOKING.format(
             room=booking.room,
             date=booking.date,
-            day_of_week=short_day_of_week(booking.date),
+            day_of_week=booking.date.strftime("%a"),
             timeslot=create_timeslot_str(booking.start_time, booking.end_time),
             username=booking.username,
             user_full_name=booking.user_full_name,

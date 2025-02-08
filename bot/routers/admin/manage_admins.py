@@ -6,4 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 class ManageAdminsStates(StatesGroup):
     CHOOSE_ACTION = State()
-    
+
+add_admin_window = Window(
+    Const("")
+)
