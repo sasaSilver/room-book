@@ -135,10 +135,8 @@ if __name__ == "__main__":
     bot = Bot(token=settings.bot_token, default=settings.bot_properties)
     dp = setup_dp()
 
-    asyncio.run(
-        dp.start_polling(
+    asyncio.run(dp.start_polling(
             bot,
             skip_updates=True,
             close_bot_session=True,
-        )
-    )
+    ))

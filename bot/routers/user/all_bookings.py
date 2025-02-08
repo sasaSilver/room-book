@@ -47,10 +47,15 @@ async def prev_day(_callback: CallbackQuery, _button: Any, dm: DialogManager):
 
 
 schedule_view_window = Window(
-    StaticMedia(url=Format("schedule://{date_iso}___{salt}"), use_pipe=True),
+    StaticMedia(
+        url=Format("schedule://{date_iso}___{salt}"),
+        use_pipe=True
+    ),
     Row(
         Button(
-            Const(" "), id="_", when=F["dialog_data"]["date"] <= datetime.date.today()
+            Const(" "),
+            id="_",
+            when=F["dialog_data"]["date"] <= datetime.date.today()
         ),
         Button(
             Const("<"),
@@ -58,9 +63,13 @@ schedule_view_window = Window(
             on_click=prev_day,
             when=F["dialog_data"]["date"] > datetime.date.today(),
         ),
-        Button(Const(">"), id="next_day", on_click=next_day),
+        Button(
+            Const(">"),
+            id="next_day",
+            on_click=next_day
+        ),
     ),
-    CancelCustom(Const(BTN_TEXTS.FINISH)),
+    CancelCustom(Const(BTN_TEXTS.CLOSE)),
     getter=get_schedule_image,
     state=ViewAllBookingsDialogStates.SCHEDULE_VIEW,
 )

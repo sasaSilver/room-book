@@ -30,6 +30,9 @@ COLORS = {
     "time_text": "#6C757D",
     "room_colors": ["#D0E6A5", "#FFDDC1", "#A5D8FF", "#FFC9C9"],
     "now_line": "#FF0053",
+    "room_header": "#2B2D42",
+    "date_text": "#2B2D42",
+    "day_text": "#6C757D"
 }
 
 
@@ -69,7 +72,7 @@ def get_bookings_img_bytes(
         draw.line([line_start, line_end], fill=COLORS["now_line"], width=3)
 
         # Circle at the start of the line
-        circle_radius = 10
+        circle_radius = 15
         circle_center = (line_start[0], line_start[1])
         circle_bbox = [
             circle_center[0] - circle_radius,
@@ -80,11 +83,11 @@ def get_bookings_img_bytes(
         draw.ellipse(circle_bbox, width=3, fill=COLORS["now_line"])
 
     # Draw date in the top-left corner
-    date_text = date.strftime("%b %d")  # "Feb 25"
+    date_text = f"{date.strftime("%b").capitalize()} {date.strftime("%d")}" # Фев 19
     day_text = date.strftime("%a")  # "Fri"
 
-    draw.text((10 * 4, 10 * 4), date_text, font=font_bold, fill="#2B2D42")
-    draw.text((10 * 4, 30 * 4), day_text, font=font_medium, fill="#6C757D")
+    draw.text((10 * 4, 10 * 4), date_text, font=font_bold, fill=COLORS["date_text"])
+    draw.text((10 * 4, 30 * 4), day_text, font=font_medium, fill=COLORS["day_text"])
 
     # Draw room headers at the top
     room_width = (TOTAL_WIDTH - TIME_COLUMN_WIDTH) / len(rooms)
@@ -109,7 +112,7 @@ def get_bookings_img_bytes(
             (x_start + room_width / 2, ROOM_HEADER_HEIGHT / 2),
             room,
             font=font_bmedium,
-            fill="#2B2D42",
+            fill=COLORS["room_header"],
             anchor="mm",
         )
 

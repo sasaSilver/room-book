@@ -100,8 +100,6 @@ async def get_time_selection_data(**kwargs):
         "daily_bookings": None,
     }
 
-    print(partial_result["time_selection_state"])
-
     if "cached_bookings" in data:
         partial_result["daily_bookings"] = data["cached_bookings"]
         return partial_result
@@ -123,7 +121,7 @@ select_room_window = Window(
         Button(Const(room), id=f"btn_room_{i}", on_click=select_room)
         for i, room in enumerate(settings.rooms)
     ],
-    CancelCustom(Const(BTN_TEXTS.CANCEL)),
+    CancelCustom(Const(BTN_TEXTS.CLOSE)),
     state=BookingDialogStates.SELECT_ROOM,
 )
 
@@ -136,7 +134,7 @@ select_date_window = Window(
     ),
     Row(
         Back(Const(BTN_TEXTS.BACK)),
-        CancelCustom(Const(BTN_TEXTS.CANCEL)),
+        CancelCustom(Const(BTN_TEXTS.CLOSE)),
     ),
     getter=get_selected_room,
     state=BookingDialogStates.SELECT_DATE,
@@ -170,7 +168,7 @@ select_time_window = Window(
             when=F["dialog_data"]["start_time"] and F["dialog_data"]["end_time"],
         ),
     ),
-    CancelCustom(Const(BTN_TEXTS.CANCEL)),
+    CancelCustom(Const(BTN_TEXTS.CLOSE)),
     state=BookingDialogStates.SELECT_BOOKING_TIME,
     getter=get_time_selection_data,
 )

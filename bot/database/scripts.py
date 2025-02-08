@@ -16,8 +16,12 @@ if __name__ == "__main__":
     import asyncio
 
     parser = argparse.ArgumentParser(description="Manage database tables")
-    parser.add_argument("--create", action="store_true", help="Create all tables")
-    parser.add_argument("--drop", action="store_true", help="Drop all tables")
+    parser.add_argument(
+        "--create", action="store_true", help="Create all tables"
+    )
+    parser.add_argument(
+        "--drop", action="store_true", help="Drop all tables"
+    )
     parser.add_argument(
         "--recreate", action="store_true", help="Drop all tables and create them again"
     )

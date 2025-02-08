@@ -14,7 +14,7 @@ class BTN_TEXTS(StrEnum):
     CREATE_BOOKING = "📅 Создать бронь"
     MY_BOOKINGS = "👤 Мои бронирования"
     ALL_BOOKINGS = "📋 Все бронирования"
-    CANCEL = "❌ Отменить"
+    CLOSE = "❌ Закрыть"
     BACK = "⬅️ Назад"
     FINISH = "✅ Завершить"
     CANCEL_BOOKING = "🔴 Отменить бронь"
