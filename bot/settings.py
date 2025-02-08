@@ -1,19 +1,20 @@
-from aiogram.client.bot import DefaultBotProperties
-from aiogram.enums.parse_mode import ParseMode
+import os
+import datetime
 from typing import List
 from dataclasses import dataclass
 from pathlib import Path
-from dotenv import load_dotenv
-import os, datetime
 
-# looks ugly
-# idk what to do about it
-ENV_PATH = Path(__file__).resolve().parent.parent / '.env'
+from dotenv import load_dotenv
+from aiogram.client.bot import DefaultBotProperties
+from aiogram.enums.parse_mode import ParseMode
+
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 load_dotenv(dotenv_path=ENV_PATH)
 
+
 @dataclass(frozen=True)
-class Settings:    
+class Settings:
     db_extensions: List[str]
     bot_token: str
     _db_url: str
@@ -29,14 +30,16 @@ class Settings:
         link_preview_is_disabled=True,
         disable_notification=True,
     )
-    
+
     @staticmethod
     def load_from_env():
         required_env_vars = ["BOT_TOKEN", "ADM_ID", "ADM_USERNAME", "DB_URL"]
         missing_env_vars = [var for var in required_env_vars if os.getenv(var) is None]
 
         if missing_env_vars:
-            raise ValueError(f"Missing environment variables: {', '.join(missing_env_vars)}")
+            raise ValueError(
+                f"Missing environment variables: {', '.join(missing_env_vars)}"
+            )
 
         return Settings(
             bot_token=os.getenv("BOT_TOKEN"),
@@ -47,14 +50,15 @@ class Settings:
             start_time=datetime.time(7, 30),
             end_time=datetime.time(18, 30),
             timeslot_duration=30,
-            db_extensions=["asyncpg"]
+            db_extensions=["asyncpg"],
         )
 
     @property
     def db_url(self) -> str:
         if not self.db_extensions:
             return self._db_url
-        extensions_str = ''.join(f'+{extension}' for extension in self.db_extensions)
+        extensions_str = "".join(f"+{extension}" for extension in self.db_extensions)
         return self._db_url.replace("://", f"{extensions_str}://")
+
 
 settings = Settings.load_from_env()
