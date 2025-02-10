@@ -30,7 +30,7 @@ def format_booking(booking: BookingSchema) -> Dict[str, str]:
         "room": booking.room,
         "booking_details": (
             f"{booking.date.strftime(FORMATS.DATE)} "
-            f"({booking.date.strftime("%a")}) "
+            f"({booking.date.strftime('%a')}) "
             f"{booking.start_time.strftime(FORMATS.TIME)}-"
             f"{booking.end_time.strftime(FORMATS.TIME)}"
         ),

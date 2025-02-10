@@ -10,7 +10,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
 from aiogram_dialog.api.exceptions import DialogsError, UnknownIntent
 
-from bot.database import db_op
 from bot.settings import settings
 from bot.texts import BTNS, TEMPLATES
 from bot.utils import(
@@ -148,7 +147,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # for local date and time formatting, on nt turn on fallback utf-8 decoding in settings
-    locale.setlocale(locale.LC_ALL, "ru-Ru.UTF-8")
+    locale.setlocale(locale.LC_ALL, "ru_RU.utf8")
 
     bot = Bot(token=settings.bot_token, default=settings.bot_properties)
     dp = setup_dp()

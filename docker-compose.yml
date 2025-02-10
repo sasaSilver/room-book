@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:latest
@@ -12,13 +10,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: on-failure
-
+    
   bot:
     build: .
-    command: sh -c "python -m bot"
+    command: sh -c "python -m bot.database.scripts --create && python -m bot"
     env_file:
       - ./.env
-
     restart: always
     depends_on:
       - postgres

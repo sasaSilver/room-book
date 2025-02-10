@@ -46,11 +46,11 @@ def get_bookings_img_bytes(
 
     # Load fonts
     try:
-        font_bold = ImageFont.truetype("arialbd.ttf", 16 * 4)
-        font_medium = ImageFont.truetype("arial.ttf", 14 * 4)
-        font_bmedium = ImageFont.truetype("arialbd.ttf", 14 * 4)
-        font_regular = ImageFont.truetype("arial.ttf", 12 * 4)
-        font_bregular = ImageFont.truetype("arialbd.ttf", 12 * 4)
+        font_bold = ImageFont.truetype("DejaVuSans-Bold.ttf", 15 * 4)
+        font_medium = ImageFont.truetype("DejaVuSans.ttf", 14 * 4)
+        font_bmedium = ImageFont.truetype("DejaVuSans-Bold.ttf", 14 * 4)
+        font_regular = ImageFont.truetype("DejaVuSans.ttf", 12 * 4)
+        font_bregular = ImageFont.truetype("DejaVuSans.ttf", 12 * 4)
     except OSError:
         font_bold = ImageFont.load_default(16 * 4)
         font_medium = ImageFont.load_default(14 * 4)
@@ -59,7 +59,7 @@ def get_bookings_img_bytes(
         font_bregular = ImageFont.load_default(12 * 4)
 
     # Draw date in the top-left corner
-    date_text = f"{date.strftime("%b").capitalize()} {date.strftime("%d")}" # Фев 19
+    date_text = f"{date.strftime('%b').capitalize()} {date.strftime('%d')}" # Фев 19
     day_text = date.strftime("%a")  # "Fri"
 
     draw.text((10 * 4, 10 * 4), date_text, font=font_bold, fill=COLORS["date_text"])

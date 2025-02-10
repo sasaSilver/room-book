@@ -6,6 +6,7 @@ from bot.settings import settings
 engine = create_async_engine(
     settings.db_url,
     pool_pre_ping=True,
+    echo=True
 )
 
 async_session = sessionmaker(
