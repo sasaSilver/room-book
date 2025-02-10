@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: booking-bot
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 1
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: on-failure
+
+  bot:
+    build: .
+    command: sh -c "python -m bot"
+    env_file:
+      - ./.env
+
+    restart: always
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

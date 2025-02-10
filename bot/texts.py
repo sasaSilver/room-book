@@ -1,19 +1,20 @@
 from enum import StrEnum
 from bot.settings import settings
 
-
 class EMOJIS(StrEnum):
     TICK = "✅"
 
 
-class BTN_TEXTS(StrEnum):
+class BTNS(StrEnum):
     """
     Button texts.
     """
-
+    # Main menu KeyboardButtons
     CREATE_BOOKING = "📅 Создать бронь"
-    MY_BOOKINGS = "👤 Мои бронирования"
-    ALL_BOOKINGS = "📋 Все бронирования"
+    MY_BOOKINGS = "👤 Мои брони"
+    BOOKINGS_SCHEDULE = "🖼️ Расписание броней"
+    
+    # InlineKeyboardButtons
     CLOSE = "❌ Закрыть"
     BACK = "⬅️ Назад"
     FINISH = "✅ Завершить"
@@ -25,17 +26,16 @@ class CONST(StrEnum):
     """
     Static strings.
     """
-
     ERROR_BOT = "<b><i>❌ Произошла ошибка со стороны бота!</i></b>\nОтчет отправлен администратору."
     SELECT_ROOM = "Выберите аудиторию:"
-    URL_PREFIX = "schedule://"
+    URL_PREFIX = "schedule"
+    SCHEDULE_URL_PATTERN = r"^{}://(.*?)___".format(URL_PREFIX)
 
 
 class TEMPLATES(StrEnum):
     """
     Dynamic strings. To be used with .format() method.
     """
-
     SELECT_DATE = "Выберите дату брони для <b>{room}</b>:"
     SELECT_TIME_EMPTY = "Нет доступных временных слотов для <b>{room}</b> на <b>{date:%d.%m} ({day_of_week})</b>."
     SELECT_START_TIME = "Выберите время начала брони <b>{room}</b> на <b>{date:%d.%m} ({day_of_week})</b>:"
@@ -57,22 +57,21 @@ class TEMPLATES(StrEnum):
         "Пользователь " + USER_LINK + " зарегистрирован.\n"
         "<i>Не удаляйте это сообщение.</i>"
     )
+    SCHEDULE_URL = "schedule://{date_iso}___{context_id}"
 
 
 class FORMATS(StrEnum):
     """
     Formats (for date and time).
     """
-
     DATE = "%d.%m"
     TIME = "%H:%M"
 
 
-class HELP_TEXTS(StrEnum):
+class HELPS(StrEnum):
     """
     Static texts from help dialog.
     """
-
     CHOOSE_HELP = "Выберите, с чем нужна помощь:"
 
     HOW2_MENU = "Почему нет меню бота?"
@@ -81,6 +80,7 @@ class HELP_TEXTS(StrEnum):
     HOW2_VIEW_ALL = "Как просмотреть все брони?"
     HOW2_CANCEL = "Как отменить свою бронь?"
     WHY_BOT_DOWN = "Почему не видно бронирования?"
+    
     MENU = f"<b>{HOW2_MENU}</b>\n\n" + (
         "Меню находится под полем ввода текста телеграма.\n\n"
         "Если его не видно, в поле ввода нажмите на самую правую квадратную иконку.\n\n"

@@ -1,16 +1,16 @@
 import datetime
 from typing import Any
-from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.widgets.kbd import Row, Button
-from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.media import StaticMedia
 
 from aiogram import F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
 
+from aiogram_dialog import Dialog, DialogManager, Window
+from aiogram_dialog.widgets.kbd import Row, Button
+from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.media import StaticMedia
 
-from bot.texts import BTN_TEXTS
+from bot.texts import BTNS, TEMPLATES
 from bot.widgets.cancel_custom_ import CancelCustom
 
 
@@ -22,10 +22,9 @@ async def dialog_init(_callback: CallbackQuery, dialog_manager: DialogManager):
     dialog_manager.dialog_data["date"] = datetime.date.today()
 
 
-async def get_schedule_image(dialog_manager: DialogManager, **_kwargs):
+async def get_schedule_url_data(dialog_manager: DialogManager, **_kwargs):
     date: datetime.date = dialog_manager.dialog_data["date"]
-
-    return {"date_iso": date.isoformat(), "salt": dialog_manager.current_context().id}
+    return {"date_iso": date.isoformat(), "context_id": dialog_manager.current_context().id}
 
 
 async def next_day(_callback: CallbackQuery, _button: Any, dm: DialogManager):
@@ -48,7 +47,9 @@ async def prev_day(_callback: CallbackQuery, _button: Any, dm: DialogManager):
 
 schedule_view_window = Window(
     StaticMedia(
-        url=Format("schedule://{date_iso}___{salt}"),
+        url=Format(TEMPLATES.SCHEDULE_URL),
+        # url will be picked up by MediaManager and be used to
+        # create the image with get_booking_image_bytes(date_iso)
         use_pipe=True
     ),
     Row(
@@ -69,8 +70,8 @@ schedule_view_window = Window(
             on_click=next_day
         ),
     ),
-    CancelCustom(Const(BTN_TEXTS.CLOSE)),
-    getter=get_schedule_image,
+    CancelCustom(Const(BTNS.CLOSE)),
+    getter=get_schedule_url_data,
     state=ViewAllBookingsDialogStates.SCHEDULE_VIEW,
 )
 

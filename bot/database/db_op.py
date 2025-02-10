@@ -6,7 +6,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.database.core import async_session
-from bot.database.schemas import BookingSchema, AdminSchema
+from bot.database.schemas import BookingSchema
 
 
 def inject_session(func):
@@ -100,34 +100,6 @@ async def get_all_bookings(session: AsyncSession) -> List[BookingSchema]:
     result = await session.execute(select(BookingSchema))
     return result.scalars().all()
 
-
-@inject_session
-async def add_admin(session: AsyncSession, id: int, username: str) -> AdminSchema:
-    admin = AdminSchema(username=username, id=id)
-    session.add(admin)
-    return admin
-
-
-@inject_session
-async def get_admins(session: AsyncSession) -> List[AdminSchema]:
-    result = await session.execute(select(AdminSchema))
-    return result.scalars().all()
-
-
-@inject_session
-async def is_admin(session: AsyncSession, username: str, id: int) -> bool:
-    result = None
-    if username:
-        result = await session.execute(
-            select(AdminSchema).where(AdminSchema.username == username)
-        )
-    elif id:
-        result = await session.execute(select(AdminSchema).where(AdminSchema.id == id))
-
-    return result.scalar() is not None
-
-
 if __name__ == "__main__":
     import asyncio
-
-    print(asyncio.run(get_admins()))
+    print(asyncio.run(get_all_bookings()))

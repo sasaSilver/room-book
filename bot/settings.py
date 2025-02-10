@@ -12,10 +12,9 @@ from aiogram.enums.parse_mode import ParseMode
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 REQUIRED_ENV = ["DB_URL", "BOT_TOKEN", "ADM_ID", "ADM_USERNAME", "ROOMS"]
 
-load_dotenv(dotenv_path=ENV_PATH)
-
-
 def validate_env():
+    if not load_dotenv(dotenv_path=ENV_PATH):
+        raise EnvironmentError("Missing .env file")
     missing_env_vars = [var for var in REQUIRED_ENV if os.getenv(var) is None]
     if missing_env_vars:
         raise ValueError(

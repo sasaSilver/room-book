@@ -58,30 +58,6 @@ def get_bookings_img_bytes(
         font_regular = ImageFont.load_default(12 * 4)
         font_bregular = ImageFont.load_default(12 * 4)
 
-    now = datetime.datetime.now()
-
-    # Red line indicating curr time
-    if date == now.date():
-        now_minutes = now.hour * 60 + now.minute
-        minute_height = HOUR_HEIGHT / 60
-        now_y = ROOM_HEADER_HEIGHT + minute_height * now_minutes
-        line_start = (TIME_COLUMN_WIDTH, now_y)
-        line_end = (TOTAL_WIDTH, now_y)
-
-        # Draw the line
-        draw.line([line_start, line_end], fill=COLORS["now_line"], width=3)
-
-        # Circle at the start of the line
-        circle_radius = 15
-        circle_center = (line_start[0], line_start[1])
-        circle_bbox = [
-            circle_center[0] - circle_radius,
-            circle_center[1] - circle_radius,
-            circle_center[0] + circle_radius,
-            circle_center[1] + circle_radius,
-        ]
-        draw.ellipse(circle_bbox, width=3, fill=COLORS["now_line"])
-
     # Draw date in the top-left corner
     date_text = f"{date.strftime("%b").capitalize()} {date.strftime("%d")}" # Фев 19
     day_text = date.strftime("%a")  # "Fri"
@@ -126,6 +102,31 @@ def get_bookings_img_bytes(
             font=font_bregular,
             fill=COLORS["time_text"],
         )
+    
+    now = datetime.datetime.now()
+
+    # Red line indicating curr time
+    if date == now.date() and settings.start_time < now.time() < settings.end_time:
+        now_minutes = now.hour * 60 + now.minute
+        minute_height = HOUR_HEIGHT / 60
+        now_y = ROOM_HEADER_HEIGHT + minute_height * (
+            now_minutes - settings.start_time.hour * 60 - settings.start_time.minute
+        )
+        line_start = (TIME_COLUMN_WIDTH, now_y)
+        line_end = (TOTAL_WIDTH, now_y)
+        # Draw the line
+        draw.line([line_start, line_end], fill=COLORS["now_line"], width=3)
+
+        # Circle at the start of the line
+        circle_radius = 15
+        circle_center = (line_start[0], line_start[1])
+        circle_bbox = [
+            circle_center[0] - circle_radius,
+            circle_center[1] - circle_radius,
+            circle_center[0] + circle_radius,
+            circle_center[1] + circle_radius,
+        ]
+        draw.ellipse(circle_bbox, width=3, fill=COLORS["now_line"])
 
     # Draw bookings
     for room_idx, room in enumerate(rooms):

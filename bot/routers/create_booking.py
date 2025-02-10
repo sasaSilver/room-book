@@ -26,7 +26,7 @@ from bot.utils.utils import (
     get_time_selection_state,
     TimeWindowState,
 )
-from bot.texts import EMOJIS, CONST, TEMPLATES, BTN_TEXTS
+from bot.texts import EMOJIS, CONST, TEMPLATES, BTNS
 
 
 class BookingDialogStates(StatesGroup):
@@ -121,7 +121,7 @@ select_room_window = Window(
         Button(Const(room), id=f"btn_room_{i}", on_click=select_room)
         for i, room in enumerate(settings.rooms)
     ],
-    CancelCustom(Const(BTN_TEXTS.CLOSE)),
+    CancelCustom(Const(BTNS.CLOSE)),
     state=BookingDialogStates.SELECT_ROOM,
 )
 
@@ -133,8 +133,8 @@ select_date_window = Window(
         config=CalendarConfig(min_date=datetime.date.today()),
     ),
     Row(
-        Back(Const(BTN_TEXTS.BACK)),
-        CancelCustom(Const(BTN_TEXTS.CLOSE)),
+        Back(Const(BTNS.BACK)),
+        CancelCustom(Const(BTNS.CLOSE)),
     ),
     getter=get_selected_room,
     state=BookingDialogStates.SELECT_DATE,
@@ -160,15 +160,15 @@ select_time_window = Window(
         width=4,
     ),
     Row(
-        Back(Const(BTN_TEXTS.BACK), on_click=clear_date_time_cache),
+        Back(Const(BTNS.BACK), on_click=clear_date_time_cache),
         Button(
-            Const(BTN_TEXTS.FINISH),
+            Const(BTNS.FINISH),
             id="btn_time_selected",
             on_click=create_booking,
             when=F["dialog_data"]["start_time"] and F["dialog_data"]["end_time"],
         ),
     ),
-    CancelCustom(Const(BTN_TEXTS.CLOSE)),
+    CancelCustom(Const(BTNS.CLOSE)),
     state=BookingDialogStates.SELECT_BOOKING_TIME,
     getter=get_time_selection_data,
 )

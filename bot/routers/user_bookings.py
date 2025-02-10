@@ -10,7 +10,7 @@ from aiogram.types import CallbackQuery
 
 
 from bot.utils.utils import to_timeslot_str
-from bot.texts import TEMPLATES, BTN_TEXTS, FORMATS
+from bot.texts import TEMPLATES, BTNS, FORMATS
 import bot.database.db_op as db_op
 from bot.database.schemas.booking_schema import BookingSchema
 from bot.widgets import CancelCustom, ScrollingGroupCircular
@@ -76,8 +76,8 @@ user_bookings_window = Window(
             Button(Format("{item[room]}"), id="booking_room"),
             Button(Format("{item[booking_details]}"), id="booking_details"),
             Checkbox(
-                Const(BTN_TEXTS.CANCELLED),
-                Const(BTN_TEXTS.CANCEL_BOOKING),
+                Const(BTNS.CANCELLED),
+                Const(BTNS.CANCEL_BOOKING),
                 id="btn_cancel",
                 on_state_changed=flag_booking_for_cancel,
             ),
@@ -90,7 +90,7 @@ user_bookings_window = Window(
         height=3,
         hide_on_single_page=True,
     ),
-    CancelCustom(Const(BTN_TEXTS.FINISH)),
+    CancelCustom(Const(BTNS.FINISH)),
     state=ViewBookingsDialogStates.VIEW_BOOKINGS,
     getter=fetch_user_bookings,
 )

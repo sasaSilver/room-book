@@ -10,18 +10,29 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
 from aiogram_dialog.api.exceptions import DialogsError, UnknownIntent
 
-from bot.routers.user.create_booking import booking_dialog, BookingDialogStates
+from bot.database import db_op
 from bot.settings import settings
-from bot.texts import BTN_TEXTS, TEMPLATES
-from bot.utils import send_error_report, get_main_rkeyboard, MediaManager
-from bot.routers.user.help import help_dialog, HelpDialogStates
-from bot.routers.user.all_bookings import (
+from bot.texts import BTNS, TEMPLATES
+from bot.utils import(
+    send_error_report,
+    get_main_rkeyboard,
+    MediaManager,
+)
+from bot.routers.help import(
+    help_dialog,
+    HelpDialogStates,
+)
+from bot.routers.all_bookings import(
     view_all_bookings_dialog,
     ViewAllBookingsDialogStates,
 )
-from bot.routers.user.user_bookings import (
+from bot.routers.user_bookings import(
     view_bookings_dialog,
     ViewBookingsDialogStates,
+)
+from bot.routers.create_booking import(
+    booking_dialog,
+    BookingDialogStates
 )
 
 
@@ -105,11 +116,18 @@ def setup_dp():
     dp = Dispatcher(storage=MemoryStorage())
 
     dp.message.register(start, F.text == "/start")
-    dp.message.register(create_booking, F.text.in_(["/book", BTN_TEXTS.CREATE_BOOKING]))
-    dp.message.register(view_user_bookings, F.text.in_(["/my", BTN_TEXTS.MY_BOOKINGS]))
+    dp.message.register(create_booking, F.text.in_(["/book", BTNS.CREATE_BOOKING]))
+    dp.message.register(view_user_bookings, F.text.in_(["/my", BTNS.MY_BOOKINGS]))
     dp.message.register(help_user, F.text.in_(["/help"]))
-    dp.message.register(view_all_bookings, F.text.in_(["/all", BTN_TEXTS.ALL_BOOKINGS]))
-    dp.my_chat_member.register(register_new_user, F.update.bot.as_("bot"))
+    dp.message.register(view_all_bookings, F.text.in_(["/all", BTNS.BOOKINGS_SCHEDULE]))
+    dp.my_chat_member.register(
+        register_new_user,
+        F.update.bot.as_("bot")
+    )
+    dp.chat_member.register(
+        register_new_user,
+        F.update.bot.as_("bot")
+    )
     dp.errors.register(
         error_handler,
         ExceptionTypeFilter(Exception, UnknownIntent, DialogsError),
@@ -130,7 +148,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     # for local date and time formatting, on nt turn on fallback utf-8 decoding in settings
-    locale.setlocale(locale.LC_ALL, "")
+    locale.setlocale(locale.LC_ALL, "ru-Ru.UTF-8")
 
     bot = Bot(token=settings.bot_token, default=settings.bot_properties)
     dp = setup_dp()

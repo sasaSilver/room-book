@@ -20,7 +20,7 @@ class BookingSchema(Base):
 
     __table_args__ = (
         CheckConstraint("end_time > start_time", name="check_time_order"),
-        CheckConstraint(date >= func.current_date, name="check_future_date"),
+
         # костыль, хз как проверить, чтобы таймслоты не пересекались
         # TODO: добавить проверку на пересечение таймслотов
         UniqueConstraint(

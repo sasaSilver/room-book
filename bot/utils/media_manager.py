@@ -12,24 +12,22 @@ import bot.database.db_op as db_op
 from bot.settings import settings
 from bot.texts import CONST
 
+SCHEDULE_URL_RE = re.compile(CONST.SCHEDULE_URL_PATTERN)
 
 class MediaManager(MessageManager):
-    URL_PATTERN = re.compile(r".*://(.*?)___")
-
     async def get_media_source(
         self,
         media: MediaAttachment,
         bot: Bot,
     ) -> Union[InputFile, str]:
-        if media.file_id:
+        if media.file_id or not(media.url and media.url.startswith(CONST.URL_PREFIX)):
             return await super().get_media_source(media, bot)
-        if media.url and media.url.startswith(CONST.URL_PREFIX):
-            date_iso: str = MediaManager.URL_PATTERN.search(media.url).group(1)
-            date = datetime.date.fromisoformat(date_iso)
-            img_bytes: bytes = get_bookings_img_bytes(
-                date, settings.rooms, await db_op.get_all_bookings()
-            )
-            return BufferedInputFile(
-                img_bytes, f"schedule_{date.strftime('%d-%m-%Y')}.png"
-            )
-        return await super().get_media_source(media, bot)
+        date_iso: str = SCHEDULE_URL_RE.search(media.url).group(1)
+        date = datetime.date.fromisoformat(date_iso)
+        img_bytes: bytes = get_bookings_img_bytes(
+            date, settings.rooms, await db_op.get_all_bookings()
+        )
+        return BufferedInputFile(
+            img_bytes, f"schedule_{date.strftime('%d-%m-%Y')}.png"
+        )
+        

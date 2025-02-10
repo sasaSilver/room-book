@@ -4,22 +4,23 @@ import datetime
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram_dialog import DialogManager
 
-from bot.texts import BTN_TEXTS
+from bot.texts import BTNS
 from bot.settings import settings
 
 
 def get_main_rkeyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
+    main_keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=BTN_TEXTS.CREATE_BOOKING)],
+            [KeyboardButton(text=BTNS.CREATE_BOOKING)],
             [
-                KeyboardButton(text=BTN_TEXTS.MY_BOOKINGS),
-                KeyboardButton(text=BTN_TEXTS.ALL_BOOKINGS),
+                KeyboardButton(text=BTNS.MY_BOOKINGS),
+                KeyboardButton(text=BTNS.BOOKINGS_SCHEDULE),
             ],
         ],
         resize_keyboard=True,
         is_persistent=True,
     )
+    return main_keyboard
 
 
 def generate_timeslots(
