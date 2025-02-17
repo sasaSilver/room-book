@@ -19,6 +19,10 @@ services:
     restart: always
     depends_on:
       - postgres
+    develop:
+      watch:
+        - path: ./
+          action: rebuild
 
 volumes:
   postgres_data:

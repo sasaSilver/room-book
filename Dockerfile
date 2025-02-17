@@ -7,10 +7,7 @@ RUN apt-get update && \
     dpkg-reconfigure --frontend=noninteractive locales
 RUN pip install --upgrade setuptools && \
     pip install --no-cache-dir -r requirements.txt
-
 ENV LANG ru_RU.UTF-8
 ENV LC_ALL ru_RU.UTF-8
-ENV LANG ru_RU.UTF-8  
 ENV LANGUAGE ru_RU:en  
-ENV LC_ALL ru_RU.UTF-8  
 COPY . .

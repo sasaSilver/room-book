@@ -1,5 +1,6 @@
 import datetime
 import io
+import logging
 from typing import List
 
 from PIL import Image, ImageDraw, ImageFont
@@ -52,7 +53,7 @@ def get_bookings_img_bytes(
         font_regular = ImageFont.truetype("DejaVuSans.ttf", 12 * 4)
         font_bregular = ImageFont.truetype("DejaVuSans.ttf", 12 * 4)
     except OSError:
-        font_bold = ImageFont.load_default(16 * 4)
+        font_bold = ImageFont.load_default(15 * 4)
         font_medium = ImageFont.load_default(14 * 4)
         font_bmedium = ImageFont.load_default(14 * 4)
         font_regular = ImageFont.load_default(12 * 4)
@@ -107,10 +108,12 @@ def get_bookings_img_bytes(
 
     # Red line indicating curr time
     if date == now.date() and settings.start_time < now.time() < settings.end_time:
-        now_minutes = now.hour * 60 + now.minute
         minute_height = HOUR_HEIGHT / 60
+        now_minutes = now.hour * 60 + now.minute
+        start_minutes = settings.start_time.hour * 60 + settings.start_time.minute
+        logging.log(logging.CRITICAL, (start_minutes, now_minutes))
         now_y = ROOM_HEADER_HEIGHT + minute_height * (
-            now_minutes - settings.start_time.hour * 60 - settings.start_time.minute
+            now_minutes - start_minutes
         )
         line_start = (TIME_COLUMN_WIDTH, now_y)
         line_end = (TOTAL_WIDTH, now_y)
@@ -118,7 +121,7 @@ def get_bookings_img_bytes(
         draw.line([line_start, line_end], fill=COLORS["now_line"], width=3)
 
         # Circle at the start of the line
-        circle_radius = 15
+        circle_radius = 4 * 4
         circle_center = (line_start[0], line_start[1])
         circle_bbox = [
             circle_center[0] - circle_radius,

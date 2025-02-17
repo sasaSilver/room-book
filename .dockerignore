@@ -6,6 +6,5 @@ __pycache__/
 *.sqlite3
 *.log
 *.git
-.venv/
 TODO
 .gitignore
