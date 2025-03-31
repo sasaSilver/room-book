@@ -6,7 +6,7 @@ from typing import List
 from PIL import Image, ImageDraw, ImageFont
 
 from bot.database.schemas import BookingSchema
-from bot.settings import settings
+from bot.config import settings
 from bot.utils.utils import to_timeslot_str
 
 # Configuration (all dimensions multiplied by 4)
@@ -196,7 +196,6 @@ if __name__ == "__main__":
     import bot.database.db_op as db_op
     import asyncio
 
-    # Test data generation
     async def create_test_data():
         today = datetime.date.today()
         data = {

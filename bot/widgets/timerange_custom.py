@@ -29,7 +29,7 @@ class TimeRangeCustom(Keyboard):
     Receives bookings for the day from dialog_data["daily_bookings"]\n
     Stores selected timepoints in widget_data.
     """
-
+    
     def reset(self, manager: DialogManager):
         self.set_widget_data(manager, [])
 
@@ -238,7 +238,7 @@ class TimeRangeCustom(Keyboard):
 
         clicked_timepoint = data
 
-        endpoint_timepoints = self.get_widget_data(manager, [])
+        endpoint_timepoints: list[str] = self.get_widget_data(manager, [])
 
         if clicked_timepoint in endpoint_timepoints:
             endpoint_timepoints.remove(clicked_timepoint)

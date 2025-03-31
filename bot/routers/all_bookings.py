@@ -10,7 +10,7 @@ from aiogram_dialog.widgets.kbd import Row, Button
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.media import StaticMedia
 
-from bot.texts import BTNS, TEMPLATES
+from bot.texts import TEMPLATES, BTNS
 from bot.widgets.cancel_custom_ import CancelCustom
 
 
@@ -24,7 +24,10 @@ async def dialog_init(_callback: CallbackQuery, dialog_manager: DialogManager):
 
 async def get_schedule_url_data(dialog_manager: DialogManager, **_kwargs):
     date: datetime.date = dialog_manager.dialog_data["date"]
-    return {"date_iso": date.isoformat(), "context_id": dialog_manager.current_context().id}
+    return TEMPLATES.SCHEDULE_URL.format(
+        date_iso=date.isoformat(),
+        context_id=dialog_manager.current_context().id
+    )
 
 
 async def next_day(_callback: CallbackQuery, _button: Any, dm: DialogManager):
@@ -48,8 +51,6 @@ async def prev_day(_callback: CallbackQuery, _button: Any, dm: DialogManager):
 schedule_view_window = Window(
     StaticMedia(
         url=Format(TEMPLATES.SCHEDULE_URL),
-        # url will be picked up by MediaManager and be used to
-        # create the image with get_booking_image_bytes(date_iso)
         use_pipe=True
     ),
     Row(

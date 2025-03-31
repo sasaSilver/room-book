@@ -1,35 +1,10 @@
 import datetime
-from functools import wraps
-from typing import List
 
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.database.core import async_session
+from bot.database.core import inject_session
 from bot.database.schemas import BookingSchema
-
-
-def inject_session(func):
-    """
-    Injects session object to the decorated db method.
-    You do not need to pass it manually.
-    """
-
-    @wraps(func)
-    async def wrapper(*args):
-        async with async_session() as session:
-            try:
-                session.begin()
-                return await func(session, *args)
-            except Exception as e:
-                await session.rollback()
-                raise e
-            finally:
-                await session.commit()
-                await session.close()
-
-    return wrapper
-
 
 @inject_session
 async def create_booking(
@@ -42,11 +17,10 @@ async def create_booking(
 @inject_session
 async def get_bookings_by_date_room(
     session: AsyncSession, date: datetime.date, room: str
-) -> List[BookingSchema]:
+) -> list[BookingSchema]:
     result = await session.execute(
-        select(BookingSchema).where(
-            BookingSchema.date == date, BookingSchema.room == room
-        )
+        select(BookingSchema).
+        where(BookingSchema.date == date, BookingSchema.room == room)
     )
     return result.scalars().all()
 
@@ -62,7 +36,7 @@ async def get_booking_by_id(session: AsyncSession, booking_id: int) -> BookingSc
 @inject_session
 async def get_bookings_by_username(
     session: AsyncSession, username: str
-) -> List[BookingSchema]:
+) -> list[BookingSchema]:
     result = await session.execute(
         select(BookingSchema)
         .where(BookingSchema.username == username)
@@ -73,7 +47,7 @@ async def get_bookings_by_username(
 
 
 @inject_session
-async def get_bookings_by_room(session: AsyncSession, room: str) -> List[BookingSchema]:
+async def get_bookings_by_room(session: AsyncSession, room: str) -> list[BookingSchema]:
     result = await session.execute(
         select(BookingSchema)
         .where(BookingSchema.room == room)
@@ -94,9 +68,8 @@ async def delete_all_bookings_by_username(session: AsyncSession, username: str) 
         delete(BookingSchema).where(BookingSchema.username == username)
     )
 
-
 @inject_session
-async def get_all_bookings(session: AsyncSession) -> List[BookingSchema]:
+async def get_all_bookings(session: AsyncSession) -> list[BookingSchema]:
     result = await session.execute(select(BookingSchema))
     return result.scalars().all()
 

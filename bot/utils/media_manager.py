@@ -9,10 +9,10 @@ from aiogram_dialog.api.entities import MediaAttachment
 
 from bot.utils.booking_img_bytes import get_bookings_img_bytes
 import bot.database.db_op as db_op
-from bot.settings import settings
-from bot.texts import CONST
+from bot.config import settings
+from bot.texts import TEMPLATES
 
-SCHEDULE_URL_RE = re.compile(CONST.SCHEDULE_URL_PATTERN)
+SCHEDULE_URL_RE = re.compile(TEMPLATES.SCHEDULE_URL)
 
 class MediaManager(MessageManager):
     async def get_media_source(
@@ -20,7 +20,7 @@ class MediaManager(MessageManager):
         media: MediaAttachment,
         bot: Bot,
     ) -> Union[InputFile, str]:
-        if media.file_id or not(media.url and media.url.startswith(CONST.URL_PREFIX)):
+        if media.file_id or not(media.url and media.url.startswith("schedule://")):
             return await super().get_media_source(media, bot)
         date_iso: str = SCHEDULE_URL_RE.search(media.url).group(1)
         date = datetime.date.fromisoformat(date_iso)

@@ -6,11 +6,12 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.filters import ExceptionTypeFilter
 from aiogram.types import Message, ChatMemberUpdated, ErrorEvent
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.utils.chat_member import ADMINS
 
 from aiogram_dialog import DialogManager, ShowMode, StartMode, setup_dialogs
 from aiogram_dialog.api.exceptions import DialogsError, UnknownIntent
 
-from bot.settings import settings
+from bot import settings
 from bot.texts import BTNS, TEMPLATES
 from bot.utils import(
     send_error_report,
@@ -44,11 +45,19 @@ async def start(message: Message):
 
 
 async def create_booking(message: Message, dialog_manager: DialogManager):
+    user_chat_member = await message.bot.get_chat_member(
+        chat_id=message.chat.id,
+        user_id=message.from_user.id
+    )
+    
+    is_admin = isinstance(user_chat_member, ADMINS)
+    logging.log(logging.INFO, is_admin)
+    
     await dialog_manager.start(
         BookingDialogStates.SELECT_ROOM,
         mode=StartMode.RESET_STACK,
         show_mode=ShowMode.EDIT,
-        data={"user": message.from_user},
+        data={"is_admin": is_admin},
     )
     await message.delete()
 
@@ -78,7 +87,7 @@ async def register_new_user(event: ChatMemberUpdated, bot: Bot):
     user = event.from_user
     message = await bot.send_message(
         event.chat.id,
-        TEMPLATES.REGISTERED_USER.format(user=user),
+        TEMPLATES.REGISTERED_USER.format(user),
         reply_markup=get_main_rkeyboard(),
     )
     await message.delete()

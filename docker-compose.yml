@@ -14,15 +14,10 @@ services:
   bot:
     build: .
     command: sh -c "python -m bot.database.scripts --create && python -m bot"
-    env_file:
-      - ./.env
     restart: always
     depends_on:
       - postgres
-    develop:
-      watch:
-        - path: ./
-          action: rebuild
-
+    env_file:
+      - .docker-env
 volumes:
   postgres_data:

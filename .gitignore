@@ -1,4 +1,5 @@
 .env
+.docker-env
 .venv
 ./pevenv.cfg
 .dist

@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import String, Date, Time, Integer, func
+from sqlalchemy import String, Date, Time, Integer
 from sqlalchemy import CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 

@@ -1,5 +1,5 @@
 from enum import StrEnum
-from bot.settings import settings
+from bot.config import settings
 
 class EMOJIS(StrEnum):
     TICK = "✅"

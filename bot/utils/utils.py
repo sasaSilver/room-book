@@ -5,7 +5,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram_dialog import DialogManager
 
 from bot.texts import BTNS
-from bot.settings import settings
+from bot.config import settings
 
 
 def get_main_rkeyboard() -> ReplyKeyboardMarkup:

@@ -1,4 +1,5 @@
 from typing import Dict, List
+import datetime
 
 from aiogram_dialog import Dialog, DialogManager, Window, SubManager
 from aiogram_dialog.widgets.text import Const, Format, Case
@@ -8,10 +9,9 @@ from aiogram import F
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery
 
-
-from bot.utils.utils import to_timeslot_str
-from bot.texts import TEMPLATES, BTNS, FORMATS
 import bot.database.db_op as db_op
+from bot.utils.utils import to_timeslot_str
+from bot.texts import EMOJIS, TEMPLATES, CONST, BTNS, FORMATS
 from bot.database.schemas.booking_schema import BookingSchema
 from bot.widgets import CancelCustom, ScrollingGroupCircular
 
@@ -111,15 +111,20 @@ async def cancel_selected_bookings(_result, dm: DialogManager):
         TEMPLATES.CANCELLED_BOOKING.format(
             room=booking.room,
             date=booking.date,
-            day_of_week=booking.date.strftime("%a"),
             timeslot=to_timeslot_str(booking.start_time, booking.end_time),
             username=booking.username,
             user_full_name=booking.user_full_name,
+            day_of_week=booking.date.strftime("%a")
         )
         for booking in cancelled_bookings
     )
     user_cancelled_bookings_text = TEMPLATES.USER_CANCELLED.format(
-        user=dm.event.from_user
+        username=dm.event.from_user.username,
+        user_full_name=dm.event.from_user.full_name,
+        room="",
+        date=datetime.date.today(),
+        timeslot="",
+        day_of_week=""
     )
     await dm.event.message.answer(
         "\n\n".join([user_cancelled_bookings_text, canceled_bookings_text])

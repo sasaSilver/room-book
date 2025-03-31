@@ -4,7 +4,7 @@ from aiogram import Bot
 from aiogram.types import BufferedInputFile, Message
 from aiogram_dialog import DialogManager
 
-from bot.settings import settings
+from bot.config import settings
 from bot.texts import CONST
 
 
